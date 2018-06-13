@@ -147,6 +147,8 @@ int main(int argc, char* argv[])
     }
 #endif
 
+    //赋值配置文件名称给sConfig的成员变量m_filename,加载配置文件到sConfig的成员变量 map:m_entries中
+    //sConfig在config.h中定义, #define sConfig MaNGOS::Singleton<Config>::Instance()
     if (!sConfig.SetSource(configFile))
     {
         sLog.outError("Could not find configuration file %s.", configFile.c_str());
@@ -154,21 +156,24 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+//linux 下的--s选项
 #ifndef _WIN32                                               // posix daemon commands need apply after config read
     if (vm.count("s"))
     {
-        switch (::tolower(serviceParameter[0]))
+        switch (::tolower(serviceParameter[0])) //转为小写
         {
-            case 'r':
+            case 'r':       //第一位为r, 对应的参数为run, 则启动守护进程, 使当前进程在后台执行
                 startDaemon();
                 break;
-            case 's':
+            case 's':       //第一位为s, 对应的参数为stop, 则停止守护进程, 实测报错No pid file specified
                 stopDaemon();
                 break;
         }
     }
 #endif
 
+    //初始化日志
+    //sLog定义 #define sLog MaNGOS::Singleton<Log>::Instance(), 这个类Singleton抽时间需要细看一下
     sLog.Initialize();
 
     sLog.outString("%s [realm-daemon]", _FULLVERSION(REVISION_DATE, REVISION_ID));

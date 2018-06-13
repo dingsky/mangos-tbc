@@ -217,13 +217,17 @@ void Log::SetLogFileLevel(char* level)
 void Log::Initialize()
 {
     /// Common log files data
+    //获取日志目录, 默认值为""
     m_logsDir = sConfig.GetStringDefault("LogsDir");
+    
+    //目录不为空的情况下, 如果目录末尾不带斜杠, 则添加一个
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
             m_logsDir.append("/");
     }
 
+    
     m_logsTimestamp = "_" + GetTimestampStr();
 
     /// Open specific log files

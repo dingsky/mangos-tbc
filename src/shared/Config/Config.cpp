@@ -75,13 +75,15 @@ bool Config::Reload()
         //拷贝Key, 从0到等号前一位, Key内容转小写, 内容去空格
         auto const entry = boost::algorithm::trim_copy(boost::algorithm::to_lower_copy(line.substr(0, equals)));
         
-        //拷贝
+        //拷贝内容
         auto const value = boost::algorithm::trim_copy_if(boost::algorithm::trim_copy(line.substr(equals + 1)), boost::algorithm::is_any_of("\""));
 
+        //把Key=Val添加到map
         newEntries[entry] = value;
     }
     while (in.good());
 
+    //拷贝map到成员变量
     m_entries = std::move(newEntries);
 
     return true;
