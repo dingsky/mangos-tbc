@@ -87,15 +87,26 @@ void usage(const char* prog)
                    , prog);
 }
 
+void ShowVersion()
+{
+    cout<<"realmd version is 20180613"<<endl;
+    return;    
+}
+
 /// Launch the realm server
 int main(int argc, char* argv[])
-{
-    std::string configFile, serviceParameter;
+{    
+    std::string configFile, serviceParameter;   //定义变量, 配置文件、服务参数
 
-    boost::program_options::options_description desc("Allowed options");
+    //构造选项描述器
+    boost::program_options::options_description desc("Allowed options");    //这里的Allowed options会作为命令行提示的抬头
+        
+    //添加选项
+    //可使用--config或-c指定配置文件路径, 默认为../etc/realmd.conf, 存放到configFile变量中, 提示语为configuration file
+    //可使用--Version或-V打印版本号, 提示语为print version and exit
     desc.add_options()
     ("config,c", boost::program_options::value<std::string>(&configFile)->default_value(_REALMD_CONFIG), "configuration file")
-    ("version,v", "print version and exit")
+    ("version,v", ShowVersion(), "print version and exit")
 #ifdef _WIN32
     ("s", boost::program_options::value<std::string>(&serviceParameter), "<run, install, uninstall> service");
 #else
