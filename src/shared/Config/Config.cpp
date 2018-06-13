@@ -30,39 +30,52 @@ INSTANTIATE_SINGLETON_1(Config);
 
 bool Config::SetSource(const std::string& file)
 {
+    //设置配置文件名称
     m_filename = file;
 
+    //重新加载配置文件
     return Reload();
 }
 
 bool Config::Reload()
 {
+    //打开配置文件
     std::ifstream in(m_filename, std::ifstream::in);
 
     if (in.fail())
         return false;
 
+    //定义map和互斥量
     std::unordered_map<std::string, std::string> newEntries;
     std::lock_guard<std::mutex> guard(m_configLock);
 
+    //逐行处理文件内容
     do
     {
+        //获取一行
         std::string line;
         std::getline(in, line);
 
+        //去除左空格
         boost::algorithm::trim_left(line);
 
+        //大小为0则重来
         if (!line.length())
             continue;
 
+        //如果行首为#或[则忽略该行
         if (line[0] == '#' || line[0] == '[')
             continue;
 
+        //寻找等号的位置
         auto const equals = line.find('=');
-        if (equals == std::string::npos)
+        if (equals == std::string::npos)    //找不到则报失败
             return false;
-
+        
+        //拷贝Key, 从0到等号前一位, Key内容转小写, 内容去空格
         auto const entry = boost::algorithm::trim_copy(boost::algorithm::to_lower_copy(line.substr(0, equals)));
+        
+        //拷贝
         auto const value = boost::algorithm::trim_copy_if(boost::algorithm::trim_copy(line.substr(equals + 1)), boost::algorithm::is_any_of("\""));
 
         newEntries[entry] = value;

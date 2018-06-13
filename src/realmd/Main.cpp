@@ -87,12 +87,6 @@ void usage(const char* prog)
                    , prog);
 }
 
-void ShowVersion()
-{
-    cout<<"realmd version is 20180613"<<endl;
-    return;    
-}
-
 /// Launch the realm server
 int main(int argc, char* argv[])
 {    
@@ -106,7 +100,7 @@ int main(int argc, char* argv[])
     //可使用--Version或-V打印版本号, 提示语为print version and exit
     desc.add_options()
     ("config,c", boost::program_options::value<std::string>(&configFile)->default_value(_REALMD_CONFIG), "configuration file")
-    ("version,v", ShowVersion(), "print version and exit")
+    ("version,v", "print version and exit")
 #ifdef _WIN32
     ("s", boost::program_options::value<std::string>(&serviceParameter), "<run, install, uninstall> service");
 #else
@@ -117,31 +111,36 @@ int main(int argc, char* argv[])
 
     try
     {
+        //解析命令行参数, 保存到vm中
         boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+            
+        //通知vm更新所有外部变量
         boost::program_options::notify(vm);
     }
     catch (boost::program_options::error const& e)
     {
+        //异常处理
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
 
         return 1;
     }
 
-#ifdef _WIN32                                                // windows service command need execute before config read
-    if (vm.count("s"))
+    //windows下 --s 选项处理
+#ifdef _WIN32                                                  // windows service command need execute before config read
+    if (vm.count("s"))  //如果--s选项被输入
     {
-        switch (::tolower(serviceParameter[0]))
+        switch (::tolower(serviceParameter[0])) //服务参数转换为小写
         {
-            case 'i':
+            case 'i':   //如果第一位为i, 对应提示的install,则调用WinServiceInstall
                 if (WinServiceInstall())
                     sLog.outString("Installing service");
                 return 1;
-            case 'u':
+            case 'u': //如果第一位为u, 对应提示的uninstall,则调用WinServiceUninstall
                 if (WinServiceUninstall())
                     sLog.outString("Uninstalling service");
                 return 1;
-            case 'r':
+            case 'r': //如果第一位为r, 对应提示的run,则调用WinServiceRun
                 WinServiceRun();
                 break;
         }
