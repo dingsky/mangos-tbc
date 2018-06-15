@@ -101,19 +101,21 @@ bool Database::Initialize(const char* infoString, int nConns /*= 1*/)
 {
     // Enable logging of SQL commands (usually only GM commands)
     // (See method: PExecuteLog)
-    m_logSQL = sConfig.GetBoolDefault("LogSQL", false);
-    m_logsDir = sConfig.GetStringDefault("LogsDir");
-    if (!m_logsDir.empty())
+    m_logSQL = sConfig.GetBoolDefault("LogSQL", false);     //是否记录SQL日志, 默认为否
+    m_logsDir = sConfig.GetStringDefault("LogsDir");        //日志目录
+    if (!m_logsDir.empty()) //如果日志目录不为空, 且末尾不为/或\, 则在末尾添加一个/
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
             m_logsDir.append("/");
     }
 
+    //获取最大PING间隔,默认为30分钟
     m_pingIntervallms = sConfig.GetIntDefault("MaxPingTime", 30) * (MINUTE * 1000);
 
     // create DB connections
 
     // setup connection pool size
+    //设置连接池大小, 最小为1, 最大16, 以传入参数为准, 默认为1
     if (nConns < MIN_CONNECTION_POOL_SIZE)
         m_nQueryConnPoolSize = MIN_CONNECTION_POOL_SIZE;
     else if (nConns > MAX_CONNECTION_POOL_SIZE)
@@ -122,6 +124,7 @@ bool Database::Initialize(const char* infoString, int nConns /*= 1*/)
         m_nQueryConnPoolSize = nConns;
 
     // create connection pool for sync requests
+    //创建连接池
     for (int i = 0; i < m_nQueryConnPoolSize; ++i)
     {
         SqlConnection* pConn = CreateConnection();

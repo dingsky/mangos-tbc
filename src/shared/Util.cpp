@@ -267,19 +267,25 @@ bool IsIPAddress(char const* ipaddress)
 /// create PID file
 uint32 CreatePIDFile(const std::string& filename)
 {
+    //打开pid文件
     FILE* pid_file = fopen(filename.c_str(), "w");
     if (pid_file == nullptr)
         return 0;
 
+    //获取当前进程ID
 #ifdef _WIN32
     DWORD pid = GetCurrentProcessId();
 #else
     pid_t pid = getpid();
 #endif
 
+    //把PID文件写入pid文件
     fprintf(pid_file, "%d", pid);
+    
+    //关闭pid文件
     fclose(pid_file);
 
+    //返回pid
     return (uint32)pid;
 }
 

@@ -227,12 +227,14 @@ void Log::Initialize()
             m_logsDir.append("/");
     }
 
-    
+    //日志时间戳设置为_+当前时间戳
     m_logsTimestamp = "_" + GetTimestampStr();
 
     /// Open specific log files
+    //以写的方式打开日志文件, LogFile是配置文件里的Key
     logfile = openLogFile("LogFile", "LogTimestamp", "w");
-
+    
+    //
     m_gmlog_per_account = sConfig.GetBoolDefault("GmLogPerAccount", false);
     if (!m_gmlog_per_account)
         gmLogfile = openLogFile("GMLogFile", "GmLogTimestamp", "a");
@@ -264,7 +266,11 @@ void Log::Initialize()
         }
     }
 
+    //以追加的方式打开CharLogFile, CharLogFile是conf中的Key, 代表文件名称
+    //
     charLogfile = openLogFile("CharLogFile", "CharLogTimestamp", "a");
+    
+    //以追加方式打开DBErrorLogFile、EventAIErrorLogFile、RaLogFile、WorldLogFile、CustomLogFile
     dberLogfile = openLogFile("DBErrorLogFile", nullptr, "a");
     eventAiErLogfile = openLogFile("EventAIErrorLogFile", nullptr, "a");
     raLogfile = openLogFile("RaLogFile", nullptr, "a");
@@ -289,10 +295,12 @@ void Log::Initialize()
 
 FILE* Log::openLogFile(char const* configFileName, char const* configTimeStampFlag, char const* mode)
 {
+    //从配置中获取日志文件的名称
     std::string logfn = sConfig.GetStringDefault(configFileName);
     if (logfn.empty())
         return nullptr;
 
+    //如果配置中设置Log文件带时间戳且日志文件名中带点, 则把时间戳追加到末尾, 默认是不加时间戳
     if (configTimeStampFlag && sConfig.GetBoolDefault(configTimeStampFlag, false))
     {
         size_t dot_pos = logfn.find_last_of('.');
@@ -302,6 +310,7 @@ FILE* Log::openLogFile(char const* configFileName, char const* configTimeStampFl
             logfn += m_logsTimestamp;
     }
 
+    //打卡日志文件
     return fopen((m_logsDir + logfn).c_str(), mode);
 }
 

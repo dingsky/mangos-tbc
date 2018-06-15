@@ -175,12 +175,14 @@ int main(int argc, char* argv[])
     //初始化日志
     //sLog定义 #define sLog MaNGOS::Singleton<Log>::Instance(), 这个类Singleton抽时间需要细看一下
     sLog.Initialize();
-
+    
+    //打印日志
     sLog.outString("%s [realm-daemon]", _FULLVERSION(REVISION_DATE, REVISION_ID));
     sLog.outString("<Ctrl-C> to stop.\n");
     sLog.outString("Using configuration file %s.", configFile.c_str());
 
     ///- Check the version of the configuration file
+    //判断配置的版本号, 如果版本过低, 则抛出警告
     uint32 confVersion = sConfig.GetIntDefault("ConfVersion", 0);
     if (confVersion < _REALMDCONFVERSION)
     {
@@ -192,6 +194,7 @@ int main(int argc, char* argv[])
         Log::WaitBeforeContinueIfNeed();
     }
 
+    //打印openssl和SSLeasy的版本
     DETAIL_LOG("%s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
     if (SSLeay() < 0x009080bfL)
     {
@@ -200,9 +203,11 @@ int main(int argc, char* argv[])
     }
 
     /// realmd PID file creation
+    //从readmd.conf中获取Pid文件路径
     std::string pidfile = sConfig.GetStringDefault("PidFile");
-    if (!pidfile.empty())
+    if (!pidfile.empty())   //如果pid文件不为空
     {
+        //创建pid文件, 将当前进程id写入到pid文件中, 同时返回pid
         uint32 pid = CreatePIDFile(pidfile);
         if (!pid)
         {
@@ -211,10 +216,12 @@ int main(int argc, char* argv[])
             return 1;
         }
 
+        //打印当前进程pid
         sLog.outString("Daemon PID: %u\n", pid);
     }
 
     ///- Initialize the database connection
+    //启动数据库
     if (!StartDB())
     {
         Log::WaitBeforeContinueIfNeed();
@@ -346,6 +353,7 @@ void OnSignal(int s)
 /// Initialize connection to the database
 bool StartDB()
 {
+    //从配置文件中获取数据库名称
     std::string dbstring = sConfig.GetStringDefault("LoginDatabaseInfo");
     if (dbstring.empty())
     {
@@ -355,6 +363,7 @@ bool StartDB()
 
     sLog.outString("Login Database total connections: %i", 1 + 1);
 
+    //初始化数据库
     if (!LoginDatabase.Initialize(dbstring.c_str()))
     {
         sLog.outError("Cannot connect to database");
