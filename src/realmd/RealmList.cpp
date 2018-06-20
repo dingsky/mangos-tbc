@@ -77,50 +77,58 @@ RealmList& sRealmList
 /// Load the realm list from the database
 void RealmList::Initialize(uint32 updateInterval)
 {
+    //把更新延迟的秒数赋值给成员变量
     m_UpdateInterval = updateInterval;
 
     ///- Get the content of the realmlist table in the database
+    //从数据库中查询realmlist表, 加载到缓存real
     UpdateRealms(true);
 }
 
 void RealmList::UpdateRealm(uint32 ID, const std::string& name, const std::string& address, uint32 port, uint8 icon, RealmFlags realmflags, uint8 timezone, AccountTypes allowedSecurityLevel, float popu, const std::string& builds)
 {
     ///- Create new if not exist or update existed
+    //往Map中新增一个元素, 如果存在则覆盖, 相当于upsert
     Realm& realm = m_realms[name];
 
-    realm.m_ID       = ID;
+    //赋值相关字段
+    realm.m_ID       = ID;  
     realm.icon       = icon;
     realm.realmflags = realmflags;
     realm.timezone   = timezone;
     realm.allowedSecurityLevel = allowedSecurityLevel;
     realm.populationLevel      = popu;
 
+    //按照空格分割realmbuilds
     Tokens tokens = StrSplit(builds, " ");
     Tokens::iterator iter;
 
+    //遍历realmbuilds, 并把每个build插入到集合中
     for (iter = tokens.begin(); iter != tokens.end(); ++iter)
     {
         uint32 build = atol((*iter).c_str());
         realm.realmbuilds.insert(build);
     }
 
+    //给第一个build赋值, 默认为0
     uint16 first_build = !realm.realmbuilds.empty() ? *realm.realmbuilds.begin() : 0;
 
+    //给BuildInfo赋值
     realm.realmBuildInfo.build = first_build;
     realm.realmBuildInfo.major_version = 0;
     realm.realmBuildInfo.minor_version = 0;
     realm.realmBuildInfo.bugfix_version = 0;
     realm.realmBuildInfo.hotfix_version = ' ';
 
-    if (first_build)
+    if (first_build)    //如果有第一版本
         if (RealmBuildInfo const* bInfo = FindBuildInfo(first_build))
             if (bInfo->build == first_build)
-                realm.realmBuildInfo = *bInfo;
+                realm.realmBuildInfo = *bInfo;  //则将已存在的第一版本信息赋值给版本信息
 
     ///- Append port to IP address.
     std::ostringstream ss;
-    ss << address << ":" << port;
-    realm.address   = ss.str();
+    ss << address << ":" << port;   //拼接地址为IP:PORT
+    realm.address   = ss.str(); //地址赋值为拼接好的串
 }
 
 void RealmList::UpdateIfNeed()
@@ -143,19 +151,23 @@ void RealmList::UpdateRealms(bool init)
     DETAIL_LOG("Updating Realm List...");
 
     ////                                               0   1     2        3     4     5           6         7                     8           9
+    //查询realmlist表, 条件为relmflags为0, 按照name排序
     QueryResult* result = LoginDatabase.Query("SELECT id, name, address, port, icon, realmflags, timezone, allowedSecurityLevel, population, realmbuilds FROM realmlist WHERE (realmflags & 1) = 0 ORDER BY name");
 
     ///- Circle through results and add them to the realm map
+    //如果查到了结果, 则逐条处理
     if (result)
     {
         do
         {
+            //匹配一条记录
             Field* fields = result->Fetch();
 
-            uint32 Id                  = fields[0].GetUInt32();
-            std::string name           = fields[1].GetCppString();
-            uint8 realmflags           = fields[5].GetUInt8();
-            uint8 allowedSecurityLevel = fields[7].GetUInt8();
+            //获取各个字段的值
+            uint32 Id                  = fields[0].GetUInt32();         //id
+            std::string name           = fields[1].GetCppString();      //name
+            uint8 realmflags           = fields[5].GetUInt8();          //relmflags
+            uint8 allowedSecurityLevel = fields[7].GetUInt8();          //allowedSecurityLevel
 
             if (realmflags & ~(REALM_FLAG_OFFLINE | REALM_FLAG_NEW_PLAYERS | REALM_FLAG_RECOMMENDED | REALM_FLAG_SPECIFYBUILD))
             {
@@ -163,16 +175,18 @@ void RealmList::UpdateRealms(bool init)
                 realmflags &= (REALM_FLAG_OFFLINE | REALM_FLAG_NEW_PLAYERS | REALM_FLAG_RECOMMENDED | REALM_FLAG_SPECIFYBUILD);
             }
 
+            //将查询到的结果保存到realmlistMap中
             UpdateRealm(
                 Id, name, fields[2].GetCppString(), fields[3].GetUInt32(),
                 fields[4].GetUInt8(), RealmFlags(realmflags), fields[6].GetUInt8(),
                 (allowedSecurityLevel <= SEC_ADMINISTRATOR ? AccountTypes(allowedSecurityLevel) : SEC_ADMINISTRATOR),
                 fields[8].GetFloat(), fields[9].GetCppString());
 
+            //如果是初始化, 则打印LOG
             if (init)
                 sLog.outString("Added realm id %u, name '%s'",  Id, name.c_str());
         }
         while (result->NextRow());
-        delete result;
+        delete result;  //释放资源
     }
 }

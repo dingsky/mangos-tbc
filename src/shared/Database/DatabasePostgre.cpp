@@ -58,6 +58,7 @@ PostgreSQLConnection::~PostgreSQLConnection()
 
 bool PostgreSQLConnection::Initialize(const char* infoString)
 {
+    //infoString从配置中获取, 例如"127.0.0.1;3306;root;123456;realmd", 按照分号进行分割
     Tokens tokens = StrSplit(infoString, ";");
 
     Tokens::iterator iter;
@@ -67,22 +68,24 @@ bool PostgreSQLConnection::Initialize(const char* infoString)
     iter = tokens.begin();
 
     if (iter != tokens.end())
-        host = *iter++;
+        host = *iter++;                 //数据库IP
     if (iter != tokens.end())
-        port_or_socket_dir = *iter++;
+        port_or_socket_dir = *iter++;   //数据库端口
     if (iter != tokens.end())
-        user = *iter++;
+        user = *iter++;                 //用户名
     if (iter != tokens.end())
-        password = *iter++;
+        password = *iter++;             //密码
     if (iter != tokens.end())
-        database = *iter++;
+        database = *iter++;             //数据库名
 
+    //登陆数据库
     if (host == ".")
         mPGconn = PQsetdbLogin(nullptr, port_or_socket_dir == "." ? nullptr : port_or_socket_dir.c_str(), nullptr, nullptr, database.c_str(), user.c_str(), password.c_str());
     else
         mPGconn = PQsetdbLogin(host.c_str(), port_or_socket_dir.c_str(), nullptr, nullptr, database.c_str(), user.c_str(), password.c_str());
 
     /* check to see that the backend connection was successfully made */
+    //检查连接是否正常
     if (PQstatus(mPGconn) != CONNECTION_OK)
     {
         sLog.outError("Could not connect to Postgre database at %s: %s",
@@ -92,8 +95,10 @@ bool PostgreSQLConnection::Initialize(const char* infoString)
         return false;
     }
 
+    //打印连接日志、数据库版本号
     DETAIL_LOG("Connected to Postgre database %s@%s:%s/%s", user.c_str(), host.c_str(), port_or_socket_dir.c_str(), database.c_str());
-    sLog.outString("PostgreSQL server ver: %d", PQserverVersion(mPGconn));
+    sLog.outString("PostgreSQL server ver: %d", PQserverVersion(mPGconn));  
+    
     return true;
 }
 

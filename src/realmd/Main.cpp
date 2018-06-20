@@ -221,7 +221,7 @@ int main(int argc, char* argv[])
     }
 
     ///- Initialize the database connection
-    //启动数据库
+    //启动数据库,包含创建一个连接池和一个用于同步的连接, 连接信息是从配置中获取的
     if (!StartDB())
     {
         Log::WaitBeforeContinueIfNeed();
@@ -229,6 +229,7 @@ int main(int argc, char* argv[])
     }
 
     ///- Get the list of realms for the server
+    //从数据库realmlist表中获取信息, 加载到缓存成员变量m_realms,这是一个MAP
     sRealmList.Initialize(sConfig.GetIntDefault("RealmsStateUpdateDelay", 20));
     if (sRealmList.size() == 0)
     {
@@ -363,13 +364,14 @@ bool StartDB()
 
     sLog.outString("Login Database total connections: %i", 1 + 1);
 
-    //初始化数据库
+    //初始化数据库, 传入数据库连接,例如“127.0.0.1;3306;root;123456;realmd”
     if (!LoginDatabase.Initialize(dbstring.c_str()))
     {
         sLog.outError("Cannot connect to database");
         return false;
     }
 
+    //检查数据库版本
     if (!LoginDatabase.CheckRequiredField("realmd_db_version", REVISION_DB_REALMD))
     {
         ///- Wait for already started DB delay threads to end

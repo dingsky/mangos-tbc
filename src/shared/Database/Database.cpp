@@ -127,23 +127,28 @@ bool Database::Initialize(const char* infoString, int nConns /*= 1*/)
     //创建连接池
     for (int i = 0; i < m_nQueryConnPoolSize; ++i)
     {
+        //创建连接
         SqlConnection* pConn = CreateConnection();
-        if (!pConn->Initialize(infoString))
+        if (!pConn->Initialize(infoString)) //初始化连接, 实际创建了和数据库之间的连接
         {
             delete pConn;
             return false;
         }
 
+        //将连接放到连接池中
         m_pQueryConnections.push_back(pConn);
     }
 
     // create and initialize connection for async requests
+    //创建同步请求的连接
     m_pAsyncConn = CreateConnection();
-    if (!m_pAsyncConn->Initialize(infoString))
+    if (!m_pAsyncConn->Initialize(infoString))  //初始化该连接
         return false;
-
+    
+    //?????????????
     m_pResultQueue = new SqlResultQueue;
 
+    //????????????????
     InitDelayThread();
     return true;
 }
@@ -175,6 +180,7 @@ void Database::InitDelayThread()
     assert(!m_delayThread);
 
     // New delay thread for delay execute
+    //创建同步线程用于同步操作
     m_threadBody = CreateDelayThread();              // will deleted at m_delayThread delete
     m_delayThread = new MaNGOS::Thread(m_threadBody);
 }
