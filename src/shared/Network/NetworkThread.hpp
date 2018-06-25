@@ -46,7 +46,7 @@ namespace MaNGOS
         public:
             NetworkThread() : m_work(new boost::asio::io_service::work(m_service)), m_serviceThread([this] { boost::system::error_code ec; this->m_service.run(ec); })
             {
-                m_serviceThread.detach();
+                m_serviceThread.detach();   //œﬂ≥Ã∑÷¿Î
             }
 
             ~NetworkThread()

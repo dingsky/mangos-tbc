@@ -33,11 +33,11 @@ namespace MaNGOS
     class Listener
     {
         private:
-            std::unique_ptr<boost::asio::io_service> m_service;
-            std::unique_ptr<boost::asio::ip::tcp::acceptor> m_acceptor;
+            std::unique_ptr<boost::asio::io_service> m_service;         //接收服务
+            std::unique_ptr<boost::asio::ip::tcp::acceptor> m_acceptor; //接收器
 
-            std::thread m_acceptorThread;
-            std::vector<std::unique_ptr<NetworkThread<SocketType>>> m_workerThreads;
+            std::thread m_acceptorThread;       //接收线程
+            std::vector<std::unique_ptr<NetworkThread<SocketType>>> m_workerThreads;    //工作线程池
 
             // the time in milliseconds to sleep a worker thread at the end of each tick
             const int SleepInterval = 100;
@@ -74,11 +74,12 @@ namespace MaNGOS
         : m_service(new boost::asio::io_service()), m_acceptor(new boost::asio::ip::tcp::acceptor(*m_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string(address), port)))
     {
         m_workerThreads.reserve(workerThreads);
-        for (auto i = 0; i < workerThreads; ++i)
+        for (auto i = 0; i < workerThreads; ++i)    //创建线程池
             m_workerThreads.push_back(std::unique_ptr<NetworkThread<SocketType>>(new NetworkThread<SocketType>));
 
-        BeginAccept();
+        BeginAccept();                              //开始接收
 
+        //????
         m_acceptorThread = std::thread([this]() { this->m_service->run(); });
     }
 
@@ -96,13 +97,13 @@ namespace MaNGOS
     template <typename SocketType>
     void Listener<SocketType>::BeginAccept()
     {
-        auto worker = SelectWorker();
-        auto socket = worker->CreateSocket();
+        auto worker = SelectWorker();           //获取工作线程
+        auto socket = worker->CreateSocket();   //创建socket
 
         m_acceptor->async_accept(socket->GetAsioSocket(),
             [this, worker, socket] (const boost::system::error_code &ec)
         {
-            this->OnAccept(worker, socket, ec);
+            this->OnAccept(worker, socket, ec); //开始接收
         });
     }
 
@@ -113,9 +114,9 @@ namespace MaNGOS
         if (ec)
             worker->RemoveSocket(socket.get());
         else
-            socket->Open();
+            socket->Open();  //处理请求, 可能调用的是Socket.cpp中的Open
 
-        BeginAccept();
+        BeginAccept();  //继续接收下一个请求
     }
 }
 

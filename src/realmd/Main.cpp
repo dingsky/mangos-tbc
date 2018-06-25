@@ -240,15 +240,18 @@ int main(int argc, char* argv[])
 
     // cleanup query
     // set expired bans to inactive
-    LoginDatabase.BeginTransaction();
+    LoginDatabase.BeginTransaction();   //开始事务, 复活封停时间已过的 被封账号和IP
     LoginDatabase.Execute("UPDATE account_banned SET active = 0 WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");
     LoginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");
-    LoginDatabase.CommitTransaction();
+    LoginDatabase.CommitTransaction();  //结束事务
 
     // FIXME - more intelligent selection of thread count is needed here.  config option?
+    //监听BindIP:RealmServerPort, 目前是0.0.0.0:3724, 最后一个参数标识线程数量, 目前是单线程
+    //使用调用的是AuthSocket里的通讯处理
     MaNGOS::Listener<AuthSocket> listener(sConfig.GetStringDefault("BindIP", "0.0.0.0"), sConfig.GetIntDefault("RealmServerPort", DEFAULT_REALMSERVER_PORT), 1);
 
     ///- Catch termination signals
+    //处理终端信号
     HookSignals();
 
     ///- Handle affinity for multiple processors and process priority on Windows
