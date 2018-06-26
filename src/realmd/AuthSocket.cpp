@@ -59,12 +59,13 @@ enum SecurityFlags
 #pragma pack(push,1)
 #endif
 
+//登陆结构
 typedef struct AUTH_LOGON_CHALLENGE_C
 {
-    uint8   cmd;
-    uint8   error;
+    uint8   cmd;            //8字节的命令
+    uint8   error;  
     uint16  size;
-    uint8   gamename[4];
+    uint8   gamename[4];    //游戏名称
     uint8   version1;
     uint8   version2;
     uint8   version3;
@@ -189,6 +190,7 @@ AuthSocket::AuthSocket(boost::asio::io_service& service, std::function<void (Soc
 bool AuthSocket::ProcessIncomingData()
 {
     // benchmarking has demonstrated that this lookup method is faster than std::map
+    //定义请求方法列表
     const static AuthHandler table[] =
     {
         { CMD_AUTH_LOGON_CHALLENGE,     STATUS_CHALLENGE,   &AuthSocket::_HandleLogonChallenge      },
@@ -200,17 +202,20 @@ bool AuthSocket::ProcessIncomingData()
         { CMD_XFER_RESUME,              STATUS_PATCH,       &AuthSocket::_HandleXferResume          },
         { CMD_XFER_CANCEL,              STATUS_PATCH,       &AuthSocket::_HandleXferCancel          }
     };
-
+    
+    //获取方法表的方法个数
     const int tableLength = sizeof(table) / sizeof(AuthHandler);
 
     // the purpose of this loop is to handle multiple opcodes in the same tcp packet,
     // which presumably the client will never do, but lets support it anyway! \o/
     while (ReadLengthRemaining() > 0)
     {
+        //获取前8字节授权命令
         const eAuthCmd cmd = static_cast<eAuthCmd>(*InPeak());
         int i;
 
         ///- Circle through known commands and call the correct command handler
+        //判断该命令是否支持, 支持则返回true
         for (i = 0; i < tableLength; ++i)
         {
             if (table[i].cmd != cmd)
@@ -219,6 +224,7 @@ bool AuthSocket::ProcessIncomingData()
             // unauthorized
             DEBUG_LOG("[Auth] Status %u, table status %u", _status, table[i].status);
 
+            
             if (table[i].status != _status)
             {
                 DEBUG_LOG("[Auth] Received unauthorized command %u length %u", cmd, ReadLengthRemaining());
@@ -227,6 +233,7 @@ bool AuthSocket::ProcessIncomingData()
 
             DEBUG_LOG("[Auth] Got data for cmd %u recv length %u", cmd, ReadLengthRemaining());
 
+            //调用该请求对应的方法
             if (!(*this.*table[i].handler)())
             {
                 DEBUG_LOG("[Auth] Command handler failed for cmd %u recv length %u", cmd, ReadLengthRemaining());
@@ -321,16 +328,21 @@ void AuthSocket::SendProof(Sha1Hash sha)
 }
 
 /// Logon Challenge command handler
+//登录
 bool AuthSocket::_HandleLogonChallenge()
 {
     DEBUG_LOG("Entering _HandleLogonChallenge");
+    
+    //如果报文长度过短, 则拒绝该请求
     if (ReadLengthRemaining() < sizeof(sAuthLogonChallenge_C))
         return false;
 
     ///- Read the first 4 bytes (header) to get the length of the remaining of the packet
+    //前4字节为报文长度
     std::vector<uint8> buf;
     buf.resize(4);
 
+    //获取报文长度
     Read((char*)&buf[0], 4);
     void* pVoid = static_cast<void*>(&buf[0]);
     uint16* pUint16 = static_cast<uint16*>(pVoid);
@@ -338,13 +350,16 @@ bool AuthSocket::_HandleLogonChallenge()
     uint16 remaining = ((sAuthLogonChallenge_C*)&buf[0])->size;
     DEBUG_LOG("[AuthChallenge] got header, body is %#04x bytes", remaining);
 
+    //报文长度过短则拒绝
     if ((remaining < sizeof(sAuthLogonChallenge_C) - buf.size()) || (ReadLengthRemaining() < remaining))
         return false;
 
     ///- Session is closed unless overriden
+    //状态设置为关闭
     _status = STATUS_CLOSED;
 
     // No big fear of memory outage (size is int16, i.e. < 65536)
+    //重新分配大小
     buf.resize(remaining + buf.size() + 1);
     buf[buf.size() - 1] = 0;
     sAuthLogonChallenge_C* ch = (sAuthLogonChallenge_C*)&buf[0];
@@ -356,7 +371,7 @@ bool AuthSocket::_HandleLogonChallenge()
 
     // BigEndian code, nop in little endian case
     // size already converted
-    EndianConvert(*((uint32*)(&ch->gamename[0])));
+    EndianConvert(*((uint32*)(&ch->gamename[0])));  
     EndianConvert(ch->build);
     EndianConvert(*((uint32*)(&ch->platform[0])));
     EndianConvert(*((uint32*)(&ch->os[0])));

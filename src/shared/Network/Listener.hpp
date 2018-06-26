@@ -114,7 +114,7 @@ namespace MaNGOS
         if (ec)
             worker->RemoveSocket(socket.get());
         else
-            socket->Open();  //处理请求, 可能调用的是Socket.cpp中的Open
+            socket->Open();  //处理请求, 调用的是AuthSocket的父类Socket中的Open
 
         BeginAccept();  //继续接收下一个请求
     }

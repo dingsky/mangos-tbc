@@ -48,10 +48,12 @@ namespace MaNGOS
             return false;
         }
 
+        //创建接收缓存
         m_outBuffer.reset(new PacketBuffer);
         m_secondaryOutBuffer.reset(new PacketBuffer);
         m_inBuffer.reset(new PacketBuffer);
 
+        //开始同步读
         StartAsyncRead();
 
         return true;
@@ -79,6 +81,8 @@ namespace MaNGOS
 
         std::shared_ptr<Socket> ptr = shared<Socket>();
         m_readState = ReadState::Reading;
+            
+        //从socket中读取信息, 然后调用OnRead函数
         m_socket.async_read_some(boost::asio::buffer(&m_inBuffer->m_buffer[m_inBuffer->m_writePosition], m_inBuffer->m_buffer.size() - m_inBuffer->m_writePosition),
                                  make_custom_alloc_handler(m_allocator,
         [ptr](const boost::system::error_code & error, size_t length) { ptr->OnRead(error, length); }));
@@ -104,6 +108,7 @@ namespace MaNGOS
         const size_t available = m_socket.available();
 
         // if there is still data to read, increase the buffer size and do so (if necessary)
+        //如果TCP缓存中的内容还没有读完, 则扩大接收缓存, 继续读
         if (available > 0 && (length + available) > m_inBuffer->m_buffer.size())
         {
             m_inBuffer->m_buffer.resize(m_inBuffer->m_buffer.size() + available);
@@ -114,6 +119,7 @@ namespace MaNGOS
         // we must repeat this in case we have read in multiple messages from the client
         while (m_inBuffer->m_readPosition < m_inBuffer->m_writePosition)
         {
+            //调用业务处理函数
             if (!ProcessIncomingData())
             {
                 // this errno is set when there is not enough buffer data available to either complete a header, or the packet length
