@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
         
     //添加选项
     //可使用--config或-c指定配置文件路径, 默认为../etc/realmd.conf, 存放到configFile变量中, 提示语为configuration file
-    //可使用--Version或-V打印版本号, 提示语为print version and exit
+    //可使用--Version或-V打印版本号, 提示语为print version and exitl
     desc.add_options()
     ("config,c", boost::program_options::value<std::string>(&configFile)->default_value(_REALMD_CONFIG), "configuration file")
     ("version,v", "print version and exit")

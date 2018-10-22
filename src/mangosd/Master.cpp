@@ -101,21 +101,24 @@ class FreezeDetectorRunnable : public MaNGOS::Runnable
 int Master::Run()
 {
     /// worldd PID file creation
+    //获取pid文件名
+    //这里实际就往pid文件里写了个进程号, 用处不大
     std::string pidfile = sConfig.GetStringDefault("PidFile");
-    if (!pidfile.empty())
+    if (!pidfile.empty())   //若pid文件名配置不为空
     {
-        uint32 pid = CreatePIDFile(pidfile);
-        if (!pid)
+        uint32 pid = CreatePIDFile(pidfile);        //创建pid文件
+        if (!pid)                                   
         {
             sLog.outError("Cannot create PID file %s.\n", pidfile.c_str());
             Log::WaitBeforeContinueIfNeed();
             return 1;
         }
 
-        sLog.outString("Daemon PID: %u\n", pid);
+        sLog.outString("Daemon PID: %u\n", pid);    //日志打印pid
     }
 
     ///- Start the databases
+    //启动数据库
     if (!_StartDB())
     {
         Log::WaitBeforeContinueIfNeed();
@@ -123,6 +126,7 @@ int Master::Run()
     }
 
     ///- Initialize the World
+    //初始化世界服务器配置, 从配置文件和数据库
     sWorld.SetInitialWorldSettings();
 
 #ifndef _WIN32
@@ -130,19 +134,24 @@ int Master::Run()
 #endif
     // server loaded successfully => enable async DB requests
     // this is done to forbid any async transactions during server startup!
+    //将成员变量允许接收同步处理设置为true
     CharacterDatabase.AllowAsyncTransactions();
     WorldDatabase.AllowAsyncTransactions();
     LoginDatabase.AllowAsyncTransactions();
 
     ///- Catch termination signals
+    //信号处理
     _HookSignals();
 
     ///- Launch WorldRunnable thread
+    //启动世界运服务行线程
     MaNGOS::Thread world_thread(new WorldRunnable);
     world_thread.setPriority(MaNGOS::Priority_Highest);
 
     // set realmbuilds depend on mangosd expected builds, and set server online
     {
+        //将当前支持的版本更新到realmlist数据库, 目前支持8086
+        //将世界服务运行状态更新为在线
         std::string builds = AcceptableClientBuildsListStr();
         LoginDatabase.escape_string(builds);
         LoginDatabase.DirectPExecute("UPDATE realmlist SET realmflags = realmflags & ~(%u), population = 0, realmbuilds = '%s'  WHERE id = '%u'", REALM_FLAG_OFFLINE, builds.c_str(), realmID);
@@ -150,6 +159,7 @@ int Master::Run()
 
     MaNGOS::Thread* cliThread = nullptr;
 
+    //需要命令行的话起一个线程处理
 #ifdef _WIN32
     if (sConfig.GetBoolDefault("Console.Enable", true) && (m_ServiceStatus == -1)/* need disable console in service mode*/)
 #else
@@ -204,7 +214,8 @@ int Master::Run()
     }
 #endif
 
-    ///- Start up freeze catcher thread
+    ///- Start up freeze     thread
+    // 如果配置了冻结时间, 则启动冻结线程, 当前配置的是0, 不冻结
     MaNGOS::Thread* freeze_thread = nullptr;
     if (uint32 freeze_delay = sConfig.GetIntDefault("MaxCoreStuckTime", 0))
     {
@@ -215,6 +226,7 @@ int Master::Run()
     }
 
     {
+        //绑定世界服务端口, 当前用的是8085
         MaNGOS::Listener<WorldSocket> listener(sConfig.GetStringDefault("BindIP", "0.0.0.0"), int32(sWorld.getConfig(CONFIG_UINT32_PORT_WORLD)), 8);
 
         std::unique_ptr<MaNGOS::Listener<RASocket>> raListener;
@@ -226,11 +238,13 @@ int Master::Run()
             soapThread.reset(new SOAPThread(sConfig.GetStringDefault("SOAP.IP", "127.0.0.1"), sConfig.GetIntDefault("SOAP.Port", 7878)));
 
         // wait for shut down and then let things go out of scope to close them down
+        //每毫秒一次循环, 检查m_stopEvent是否为true, 是则退出
         while (!World::IsStopped())
             std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     ///- Stop freeze protection before shutdown tasks
+    //在退出之前关闭冻结线程
     if (freeze_thread)
     {
         freeze_thread->destroy();
@@ -238,22 +252,27 @@ int Master::Run()
     }
 
     ///- Set server offline in realmlist
+    //将realmlist中世界服务运行状态更新为离线
     LoginDatabase.DirectPExecute("UPDATE realmlist SET realmflags = realmflags | %u WHERE id = '%u'", REALM_FLAG_OFFLINE, realmID);
 
     ///- Remove signal handling before leaving
+    //取消信号处理
     _UnhookSignals();
 
     // when the main thread closes the singletons get unloaded
     // since worldrunnable uses them, it will crash if unloaded after master
+    //等待世界服务线程退出
     world_thread.wait();
 
     ///- Clean account database before leaving
+    //将在线的用户状态都设置为离线
     clearOnlineAccounts();
 
     // send all still queued mass mails (before DB connections shutdown)
     sMassMailMgr.Update(true);
 
     ///- Wait for DB delay threads to end
+    //等待数据库线程退出
     CharacterDatabase.HaltDelayThread();
     WorldDatabase.HaltDelayThread();
     LoginDatabase.HaltDelayThread();
@@ -311,9 +330,11 @@ int Master::Run()
     }
 
     // mark this can be killable
+    //允许被杀死
     m_canBeKilled = true;
 
     ///- Exit the process with specified return value
+    //返回退出码
     return World::GetExitCode();
 }
 
@@ -321,8 +342,13 @@ int Master::Run()
 bool Master::_StartDB()
 {
     ///- Get world database info from configuration file
+    //获取数据库连接配置
     std::string dbstring = sConfig.GetStringDefault("WorldDatabaseInfo");
+
+    //获取数据库库连接数量配置, 没有配则默认为1
     int nConnections = sConfig.GetIntDefault("WorldDatabaseConnections", 1);
+
+    //数据库连接配置空值校验
     if (dbstring.empty())
     {
         sLog.outError("Database not specified in configuration file");
@@ -331,12 +357,14 @@ bool Master::_StartDB()
     sLog.outString("World Database total connections: %i", nConnections + 1);
 
     ///- Initialise the world database
+    //初始化世界服务器数据库, 内部链接数据库, 设置字符编码为utf-8
     if (!WorldDatabase.Initialize(dbstring.c_str(), nConnections))
     {
         sLog.outError("Cannot connect to world database %s", dbstring.c_str());
         return false;
     }
 
+    //校验世界服务器数据库版本
     if (!WorldDatabase.CheckRequiredField("db_version", REVISION_DB_MANGOS))
     {
         ///- Wait for already started DB delay threads to end
@@ -344,8 +372,13 @@ bool Master::_StartDB()
         return false;
     }
 
+    //获取角色服务器数据库配置
     dbstring = sConfig.GetStringDefault("CharacterDatabaseInfo");
+
+    //获取连接数量, 默认为1 
     nConnections = sConfig.GetIntDefault("CharacterDatabaseConnections", 1);
+
+    //数据库库配置空值校验
     if (dbstring.empty())
     {
         sLog.outError("Character Database not specified in configuration file");
@@ -357,6 +390,7 @@ bool Master::_StartDB()
     sLog.outString("Character Database total connections: %i", nConnections + 1);
 
     ///- Initialise the Character database
+    //角色数据库初始化, 内部链接数据库, 设置字符编码为utf-8
     if (!CharacterDatabase.Initialize(dbstring.c_str(), nConnections))
     {
         sLog.outError("Cannot connect to Character database %s", dbstring.c_str());
@@ -366,6 +400,7 @@ bool Master::_StartDB()
         return false;
     }
 
+    //角色数据库库版本校验
     if (!CharacterDatabase.CheckRequiredField("character_db_version", REVISION_DB_CHARACTERS))
     {
         ///- Wait for already started DB delay threads to end
@@ -375,8 +410,13 @@ bool Master::_StartDB()
     }
 
     ///- Get login database info from configuration file
+    //获取登录数据库配置, 实际是realmd库
     dbstring = sConfig.GetStringDefault("LoginDatabaseInfo");
+
+    //获取登录数据库连接数
     nConnections = sConfig.GetIntDefault("LoginDatabaseConnections", 1);
+
+    //数据库配置空值校验
     if (dbstring.empty())
     {
         sLog.outError("Login database not specified in configuration file");
@@ -389,6 +429,8 @@ bool Master::_StartDB()
 
     ///- Initialise the login database
     sLog.outString("Login Database total connections: %i", nConnections + 1);
+
+    //登录数据库库初始化, 内部链接数据库, 设置字符编码为utf-8
     if (!LoginDatabase.Initialize(dbstring.c_str(), nConnections))
     {
         sLog.outError("Cannot connect to login database %s", dbstring.c_str());
@@ -399,6 +441,7 @@ bool Master::_StartDB()
         return false;
     }
 
+    //登录数据库版本校验
     if (!LoginDatabase.CheckRequiredField("realmd_db_version", REVISION_DB_REALMD))
     {
         ///- Wait for already started DB delay threads to end
@@ -411,6 +454,7 @@ bool Master::_StartDB()
     sLog.outString();
 
     ///- Get the realm Id from the configuration file
+    //获取realm ID, 作用....
     realmID = sConfig.GetIntDefault("RealmID", 0);
     if (!realmID)
     {
@@ -427,6 +471,7 @@ bool Master::_StartDB()
     sLog.outString();
 
     ///- Clean the database before starting
+    //把当前是登录状态的数据更新为非登陆状态
     clearOnlineAccounts();
 
     sWorld.LoadDBVersion();

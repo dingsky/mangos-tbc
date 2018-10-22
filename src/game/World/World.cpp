@@ -352,6 +352,7 @@ void World::LoadConfigSettings(bool reload)
     }
 
     ///- Read the version of the configuration file and warn the user in case of emptiness or mismatch
+    //获取配置版本号
     uint32 confVersion = sConfig.GetIntDefault("ConfVersion", 0);
     if (!confVersion)
     {
@@ -363,6 +364,7 @@ void World::LoadConfigSettings(bool reload)
     }
     else
     {
+        //检查版本是否过低
         if (confVersion < _MANGOSDCONFVERSION)
         {
             sLog.outError("*****************************************************************************");
@@ -375,10 +377,14 @@ void World::LoadConfigSettings(bool reload)
     }
 
     ///- Read the player limit and the Message of the day from the config file
+    //设置玩家登陆的安全级别
     SetPlayerLimit(sConfig.GetIntDefault("PlayerLimit", DEFAULT_PLAYER_LIMIT), true);
+
+    //设置登陆提示语
     SetMotd(sConfig.GetStringDefault("Motd", "Welcome to the Massive Network Game Object Server."));
 
     ///- Read all rates from the config file
+    //设置一堆的配置, 如果没配, 则默认为1.0f
     setConfigPos(CONFIG_FLOAT_RATE_HEALTH,                               "Rate.Health",                               1.0f);
     setConfigPos(CONFIG_FLOAT_RATE_POWER_MANA,                           "Rate.Mana",                                 1.0f);
     setConfigPos(CONFIG_FLOAT_RATE_POWER_RAGE_INCOME,                    "Rate.Rage.Income",                          1.0f);
@@ -845,18 +851,23 @@ void World::LoadConfigSettings(bool reload)
 void World::SetInitialWorldSettings()
 {
     ///- Initialize the random number generator
+    //初始化随机种子
     srand((unsigned int)time(nullptr));
 
     ///- Time server startup
+    //获取MST时间为启动时间
     uint32 uStartTime = WorldTimer::getMSTime();
 
     ///- Initialize detour memory management
+    //初始化客户内存管理函数
     dtAllocSetCustom(dtCustomAlloc, dtCustomFree);
 
     ///- Initialize config settings
+    //加载配置项
     LoadConfigSettings();
 
     ///- Check the existence of the map files for all races start areas.
+    //检查地图文件是否完整
     if (!MapManager::ExistMapAndVMap(0, -6240.32f, 331.033f) ||                     // Dwarf/ Gnome
             !MapManager::ExistMapAndVMap(0, -8949.95f, -132.493f) ||                // Human
             !MapManager::ExistMapAndVMap(1, -618.518f, -4251.67f) ||                // Orc
@@ -873,6 +884,7 @@ void World::SetInitialWorldSettings()
     }
 
     ///- Loading strings. Getting no records means core load has to be canceled because no error message can be output.
+    //加载一些错误输入的字符串
     sLog.outString("Loading MaNGOS strings...");
     if (!sObjectMgr.LoadMangosStrings())
     {
@@ -884,14 +896,16 @@ void World::SetInitialWorldSettings()
     // No SQL injection as values are treated as integers
 
     // not send custom type REALM_FFA_PVP to realm list
-    uint32 server_type = IsFFAPvPRealm() ? uint32(REALM_TYPE_PVP) : getConfig(CONFIG_UINT32_GAME_TYPE);
-    uint32 realm_zone = getConfig(CONFIG_UINT32_REALM_ZONE);
+    uint32 server_type = IsFFAPvPRealm() ? uint32(REALM_TYPE_PVP) : getConfig(CONFIG_UINT32_GAME_TYPE);     //服务类型, 目前配的是0:普通
+    uint32 realm_zone = getConfig(CONFIG_UINT32_REALM_ZONE);           
     LoginDatabase.PExecute("UPDATE realmlist SET icon = %u, timezone = %u WHERE id = '%u'", server_type, realm_zone, realmID);
 
     ///- Remove the bones (they should not exist in DB though) and old corpses after a restart
+    //把那些封号时间到期的号解封
     CharacterDatabase.PExecute("DELETE FROM corpse WHERE corpse_type = '0' OR time < (UNIX_TIMESTAMP()-'%u')", 3 * DAY);
 
     /// load spell_dbc first! dbc's need them
+    //加载模板
     sLog.outString("Loading spell_template...");
     sObjectMgr.LoadSpellTemplate();
 
@@ -2217,14 +2231,18 @@ void World::ResetMonthlyQuests()
 
 void World::SetPlayerLimit(int32 limit, bool needUpdate)
 {
+    //限制最小为SEC_ADMINISTRATOR
     if (limit < -SEC_ADMINISTRATOR)
         limit = -SEC_ADMINISTRATOR;
 
     // lock update need
+    //判断是否需要更新数据库
     bool db_update_need = needUpdate || (limit < 0) != (m_playerLimit < 0) || (limit < 0 && m_playerLimit < 0 && limit != m_playerLimit);
 
+    //设置成员变量玩家人数限制
     m_playerLimit = limit;
 
+    //如果需要更新数据库, 则更新realmlist的安全级别
     if (db_update_need)
         LoginDatabase.PExecute("UPDATE realmlist SET allowedSecurityLevel = '%u' WHERE id = '%u'",
                                uint32(GetPlayerSecurityLimit()), realmID);

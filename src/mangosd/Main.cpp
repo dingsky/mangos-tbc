@@ -84,9 +84,17 @@ void usage(const char* prog)
 /// Launch the mangos server
 int main(int argc, char* argv[])
 {
+    //定义变量 拍卖机器人配置 配置文件 服务参数
     std::string auctionBotConfig, configFile, serviceParameter;
 
+    //构造选项描述其,这里的Allowed options会作为命令行提示的抬头
     boost::program_options::options_description desc("Allowed options");
+
+    //添加选项
+    //-a或--ahbot 指定拍卖机器人配置文件
+    //-c或--config 指定配置文件
+    //-h或--help 打印提示信息
+    //-v或--version 打印版本信息并退出
     desc.add_options()
     ("ahbot,a", boost::program_options::value<std::string>(&auctionBotConfig), "ahbot configuration file")
     ("config,c", boost::program_options::value<std::string>(&configFile)->default_value(_MANGOSD_CONFIG), "configuration file")
@@ -98,21 +106,27 @@ int main(int argc, char* argv[])
     ("s", boost::program_options::value<std::string>(&serviceParameter), "<run, stop> service");
 #endif
 
+    //定义命令行参数map
     boost::program_options::variables_map vm;
 
     try
     {
+        //将命令行参数解析出来并存储至vm中
         boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+        //通知vm更新所有的外部变量
         boost::program_options::notify(vm);
 
+        //如果输入了help
         if (vm.count("help"))
         {
-            std::cout << desc << std::endl;
+            std::cout << desc << std::endl; //打印desc提示语
             return 0;
         }
 
+        //如果输入了version
         if (vm.count("version"))
         {
+            //打印文件版本日期、版本号、boost版本信息
             std::cout << _FULLVERSION(REVISION_DATE, REVISION_ID) << std::endl;
             std::cout << "Boost version " << (BOOST_VERSION / 10000) << "." << ((BOOST_VERSION / 100) % 1000) << "." << (BOOST_VERSION % 100) << std::endl;
             return 0;
@@ -120,14 +134,15 @@ int main(int argc, char* argv[])
     }
     catch (boost::program_options::error const& e)
     {
+        //异常情况下打印错误信息和help提示
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
-
         return 1;
     }
 
+    //如果输入了ahbot
     if (vm.count("ahbot"))
-        sAuctionBotConfig.SetConfigFileName(auctionBotConfig);
+        sAuctionBotConfig.SetConfigFileName(auctionBotConfig);  //设置拍卖机器人配置文件名称
 
 #ifdef _WIN32                                                // windows service command need execute before config read
     if (vm.count("s"))
@@ -149,6 +164,7 @@ int main(int argc, char* argv[])
     }
 #endif
 
+    //设置配置文件名称
     if (!sConfig.SetSource(configFile))
     {
         sLog.outError("Could not find configuration file %s.", configFile.c_str());
@@ -171,6 +187,7 @@ int main(int argc, char* argv[])
     }
 #endif
 
+    //打印一些启动日志
     sLog.outString("%s [world-daemon]", _FULLVERSION(REVISION_DATE, REVISION_ID));
     sLog.outString("<Ctrl-C> to stop.");
     sLog.outString("\n\n"
@@ -185,12 +202,15 @@ int main(int argc, char* argv[])
     sLog.outString("Using configuration file %s.", configFile.c_str());
 
     DETAIL_LOG("%s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
+
+    //检查OPENSSL版本, 如果版本过低, 则打印警告日志
     if (SSLeay() < 0x009080bfL)
     {
         DETAIL_LOG("WARNING: Outdated version of OpenSSL lib. Logins to server may not work!");
         DETAIL_LOG("WARNING: Minimal required version [OpenSSL 0.9.8k]");
     }
 
+    //打印boost版本
     DETAIL_LOG("Using Boost: %s", BOOST_LIB_VERSION);
 
     ///- Set progress bars show mode
@@ -198,6 +218,7 @@ int main(int argc, char* argv[])
 
     ///- and run the 'Master'
     /// \todo Why do we need this 'Master'? Can't all of this be in the Main as for Realmd?
+    //启动服务
     return sMaster.Run();
 
     // at sMaster return function exist with codes
