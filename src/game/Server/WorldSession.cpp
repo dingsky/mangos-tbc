@@ -213,6 +213,7 @@ bool WorldSession::Update(PacketFilter& updater)
     /// not process packets if socket already closed
     while (m_Socket && !m_Socket->IsClosed() && !m_recvQueue.empty())
     {
+        //取出队列头第一个消息
         auto const packet = std::move(m_recvQueue.front());
         m_recvQueue.pop_front();
 
@@ -222,6 +223,7 @@ bool WorldSession::Update(PacketFilter& updater)
                         packet->GetOpcode());
         #endif*/
 
+        //获取处理码,根据handle的状态调用相关的处理
         OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
         try
         {

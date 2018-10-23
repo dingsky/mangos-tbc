@@ -144,7 +144,7 @@ int Master::Run()
     _HookSignals();
 
     ///- Launch WorldRunnable thread
-    //启动世界运服务行线程
+    //启动世界运服务心跳线程
     MaNGOS::Thread world_thread(new WorldRunnable);
     world_thread.setPriority(MaNGOS::Priority_Highest);
 

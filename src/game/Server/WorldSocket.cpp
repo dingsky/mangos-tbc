@@ -108,6 +108,7 @@ bool WorldSocket::Open()
     return true;
 }
 
+//世界服务消息处理函数
 bool WorldSocket::ProcessIncomingData()
 {
     ClientPktHeader header;
@@ -180,7 +181,7 @@ bool WorldSocket::ProcessIncomingData()
     {
         switch (opcode)
         {
-            case CMSG_AUTH_SESSION:
+            case CMSG_AUTH_SESSION: //授权会话消息
                 if (m_session)
                 {
                     sLog.outError("WorldSocket::ProcessIncomingData: Player send CMSG_AUTH_SESSION again");
@@ -189,15 +190,15 @@ bool WorldSocket::ProcessIncomingData()
 
                 return HandleAuthSession(*pct);
 
-            case CMSG_PING:
+            case CMSG_PING:         //连通性测试消息
                 return HandlePing(*pct);
 
-            case CMSG_KEEP_ALIVE:
+            case CMSG_KEEP_ALIVE:   //保活消息
                 DEBUG_LOG("CMSG_KEEP_ALIVE ,size: " SIZEFMTD " ", pct->size());
 
                 return true;
 
-            default:
+            default:                //其他应用消息处理
             {
                 if (!m_session)
                 {
@@ -205,7 +206,7 @@ bool WorldSocket::ProcessIncomingData()
                     return false;
                 }
 
-                m_session->QueuePacket(std::move(pct));
+                m_session->QueuePacket(std::move(pct)); //将消息放到处理队列尾部
 
                 return true;
             }

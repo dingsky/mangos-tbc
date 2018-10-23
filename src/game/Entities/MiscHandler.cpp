@@ -1105,6 +1105,7 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
     SendPacket(data);
 }
 
+//【世界服务】远程传送处理函数
 void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WORLD_TELEPORT from %s", GetPlayer()->GetGuidStr().c_str());
@@ -1129,6 +1130,7 @@ void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
 
     // DEBUG_LOG("Received opcode CMSG_WORLD_TELEPORT");
 
+    //飞行状态, 不允许远程传送
     if (GetPlayer()->IsTaxiFlying())
     {
         DEBUG_LOG("Player '%s' (GUID: %u) in flight, ignore worldport command.", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow());
