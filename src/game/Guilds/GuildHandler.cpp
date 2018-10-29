@@ -27,6 +27,7 @@
 #include "Guilds/GuildMgr.h"
 #include "Social/SocialMgr.h"
 
+//查询公会信息
 void WorldSession::HandleGuildQueryOpcode(WorldPacket& recvPacket)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_GUILD_QUERY");
@@ -34,12 +35,14 @@ void WorldSession::HandleGuildQueryOpcode(WorldPacket& recvPacket)
     uint32 guildId;
     recvPacket >> guildId;
 
+    //查询公会信息, 查到则返回公会信息
     if (Guild* guild = sGuildMgr.GetGuildById(guildId))
     {
         guild->Query(this);
         return;
     }
 
+    //没有查到公会信息, 发送结果:玩家不在公会中
     SendGuildCommandResult(GUILD_CREATE_S, "", ERR_GUILD_PLAYER_NOT_IN_GUILD);
 }
 

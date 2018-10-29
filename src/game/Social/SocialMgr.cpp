@@ -120,16 +120,19 @@ void PlayerSocial::SetFriendNote(ObjectGuid friend_guid, std::string note)
 
 void PlayerSocial::SendSocialList()
 {
+    //获取玩家信息
     Player* plr = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, m_playerLowGuid));
     if (!plr)
         return;
 
+    //玩家好友列表大小
     uint32 size = m_playerSocialMap.size();
 
     WorldPacket data(SMSG_CONTACT_LIST, (4 + 4 + size * 25)); // just can guess size
     data << uint32(7);                                      // unk flag (0x1, 0x2, 0x4), 0x7 if it include ignore list
     data << uint32(size);                                   // friends count
 
+    //遍历好友列表
     for (PlayerSocialMap::iterator itr = m_playerSocialMap.begin(); itr != m_playerSocialMap.end(); ++itr)
     {
         FriendInfo& friendInfo = itr->second;
@@ -141,15 +144,16 @@ void PlayerSocial::SendSocialList()
         if (friendInfo.Flags & SOCIAL_FLAG_FRIEND)         // if IsFriend()
         {
             data << uint8(friendInfo.Status);              // online/offline/etc?
-            if (friendInfo.Status)                         // if online
+            if (friendInfo.Status)                         // if online     玩家是否在线
             {
-                data << uint32(friendInfo.Area);           // player area
-                data << uint32(friendInfo.Level);          // player level
-                data << uint32(friendInfo.Class);          // player class
+                data << uint32(friendInfo.Area);           // player area   玩家区域
+                data << uint32(friendInfo.Level);          // player level  玩家级别
+                data << uint32(friendInfo.Class);          // player class  玩家职业
             }
         }
     }
 
+    //发送应答报文
     plr->GetSession()->SendPacket(data);
     DEBUG_LOG("WORLD: Sent SMSG_CONTACT_LIST");
 }

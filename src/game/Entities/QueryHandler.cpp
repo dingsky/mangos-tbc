@@ -78,6 +78,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     if (!result)
         return;
 
+    //根据账户号查询session
     WorldSession* session = sWorld.FindSession(accountId);
     if (!session)
     {
@@ -85,6 +86,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
         return;
     }
 
+    //从数据库结果集提取应答需要的要素
     Field* fields = result->Fetch();
     uint32 lowguid      = fields[0].GetUInt32();
     std::string name = fields[1].GetCppString();
@@ -98,6 +100,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
         pClass       = fields[4].GetUInt8();
     }
     // guess size
+    //组织应答报文
     WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + 1 + 4 + 4 + 4 + 10));
     data << ObjectGuid(HIGHGUID_PLAYER, lowguid);
     data << name;
@@ -116,6 +119,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     else
         data << uint8(0);                                   // is not declined
 
+    //发送应答报文
     session->SendPacket(data);
     delete result;
 }
@@ -127,6 +131,7 @@ void WorldSession::HandleNameQueryOpcode(WorldPacket& recv_data)
 
     recv_data >> guid;
 
+    //如果缓存中有则取缓存中的, 没有的话则取数据库中的
     Player* pChar = sObjectMgr.GetPlayer(guid);
 
     if (pChar)
@@ -141,13 +146,15 @@ void WorldSession::HandleQueryTimeOpcode(WorldPacket& /*recv_data*/)
 }
 
 /// Only _static_ data send in this packet !!!
+//生物查询
 void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
 {
     uint32 entry;
-    recv_data >> entry;
+    recv_data >> entry; //生物编号
     ObjectGuid guid;
-    recv_data >> guid;
+    recv_data >> guid;  //生物guid
 
+    //查询生物
     CreatureInfo const* ci = ObjectMgr::GetCreatureTemplate(entry);
     if (ci)
     {
@@ -193,13 +200,15 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
 }
 
 /// Only _static_ data send in this packet !!!
+//查询目标信息
 void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recv_data)
 {
     uint32 entryID;
-    recv_data >> entryID;
+    recv_data >> entryID;   //目标ID
     ObjectGuid guid;
-    recv_data >> guid;
+    recv_data >> guid;      //目标guid
 
+    //获取目标信息
     const GameObjectInfo* info = ObjectMgr::GetGameObjectInfo(entryID);
     if (info)
     {
@@ -225,10 +234,10 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recv_data)
         }
         DETAIL_LOG("WORLD: CMSG_GAMEOBJECT_QUERY '%s' - Entry: %u. ", info->name, entryID);
         WorldPacket data(SMSG_GAMEOBJECT_QUERY_RESPONSE, 150);
-        data << uint32(entryID);
-        data << uint32(info->type);
-        data << uint32(info->displayId);
-        data << Name;
+        data << uint32(entryID);    //目标ID
+        data << uint32(info->type); //目标类型
+        data << uint32(info->displayId);    //目标显示编号
+        data << Name;   //名称
         data << uint8(0) << uint8(0) << uint8(0);           // name2, name3, name4
         data << IconName;                                   // 2.0.3, string. Icon name to use instead of default icon for go's (ex: "Attack" makes sword)
         data << CastBarCaption;                             // 2.0.3, string. Text will appear in Cast Bar when using GO (ex: "Collecting")
@@ -372,20 +381,24 @@ void WorldSession::HandleNpcTextQueryOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Sent SMSG_NPC_TEXT_UPDATE");
 }
 
+//页面文本查询
 void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 {
     DETAIL_LOG("WORLD: Received opcode CMSG_PAGE_TEXT_QUERY");
 
     uint32 pageID;
-    recv_data >> pageID;
+    recv_data >> pageID;    //页面ID
 
     while (pageID)
     {
+        //查询页面
         PageText const* pPage = sPageTextStore.LookupEntry<PageText>(pageID);
         // guess size
+        //构建应答报文
         WorldPacket data(SMSG_PAGE_TEXT_QUERY_RESPONSE, 50);
         data << pageID;
 
+        //判断页面是否存在
         if (!pPage)
         {
             data << "Item page missing.";
@@ -394,6 +407,7 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
         }
         else
         {
+            //获取页面内容
             std::string Text = pPage->Text;
 
             int loc_idx = GetSessionDbLocaleIndex();
@@ -409,7 +423,7 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 
             data << Text;
             data << uint32(pPage->Next_Page);
-            pageID = pPage->Next_Page;
+            pageID = pPage->Next_Page;  //指向下一页
         }
         SendPacket(data);
 

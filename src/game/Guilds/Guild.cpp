@@ -808,6 +808,7 @@ void Guild::Roster(WorldSession* session /*= nullptr*/)
     DEBUG_LOG("WORLD: Sent (SMSG_GUILD_ROSTER)");
 }
 
+//查询公会信息
 void Guild::Query(WorldSession* session)
 {
     WorldPacket data(SMSG_GUILD_QUERY_RESPONSE, (8 * 32 + 200)); // we can only guess size

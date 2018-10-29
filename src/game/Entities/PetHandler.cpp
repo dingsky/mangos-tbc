@@ -366,21 +366,24 @@ void WorldSession::HandlePetStopAttack(WorldPacket& recv_data)
     pet->AttackStop();
 }
 
+//宠物信息查询
 void WorldSession::HandlePetNameQueryOpcode(WorldPacket& recv_data)
 {
     DETAIL_LOG("HandlePetNameQuery. CMSG_PET_NAME_QUERY");
 
-    uint32 petnumber;
-    ObjectGuid petguid;
+    uint32 petnumber;       //宠物编号
+    ObjectGuid petguid;     //宠物guid
 
     recv_data >> petnumber;
     recv_data >> petguid;
 
+    //发送宠物信息
     SendPetNameQuery(petguid, petnumber);
 }
 
 void WorldSession::SendPetNameQuery(ObjectGuid petguid, uint32 petnumber) const
 {
+    //宠物信息
     Creature* pet = _player->GetMap()->GetAnyTypeCreature(petguid);
     if (!pet || !pet->GetCharmInfo() || pet->GetCharmInfo()->GetPetNumber() != petnumber)
         return;
@@ -394,6 +397,7 @@ void WorldSession::SendPetNameQuery(ObjectGuid petguid, uint32 petnumber) const
         sObjectMgr.GetCreatureLocaleStrings(pet->GetEntry(), loc_idx, &name);
     }
 
+    //组织应答报文
     WorldPacket data(SMSG_PET_NAME_QUERY_RESPONSE, (4 + 4 + strlen(name) + 1));
     data << uint32(petnumber);
     data << name;
@@ -408,6 +412,7 @@ void WorldSession::SendPetNameQuery(ObjectGuid petguid, uint32 petnumber) const
     else
         data << uint8(0);
 
+    //返回报文
     _player->GetSession()->SendPacket(data);
 }
 

@@ -520,15 +520,17 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
 }
 
 // send only static data in this packet!
+//发送问题查询应答
 void PlayerMenu::SendQuestQueryResponse(Quest const* pQuest) const
 {
     std::string Title, Details, Objectives, EndText;
     std::string ObjectiveText[QUEST_OBJECTIVES_COUNT];
-    Title = pQuest->GetTitle();
-    Details = pQuest->GetDetails();
-    Objectives = pQuest->GetObjectives();
-    EndText = pQuest->GetEndText();
+    Title = pQuest->GetTitle();             //问题标题
+    Details = pQuest->GetDetails();         //问题描述
+    Objectives = pQuest->GetObjectives();   //获取目标文本
+    EndText = pQuest->GetEndText();         //问题结束语
 
+    //把目标文本存到数据中
     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
         ObjectiveText[i] = pQuest->ObjectiveText[i];
 
@@ -552,6 +554,7 @@ void PlayerMenu::SendQuestQueryResponse(Quest const* pQuest) const
         }
     }
 
+    //组织应答报文
     WorldPacket data(SMSG_QUEST_QUERY_RESPONSE, 100);       // guess size
 
     data << uint32(pQuest->GetQuestId());                   // quest id
@@ -637,6 +640,7 @@ void PlayerMenu::SendQuestQueryResponse(Quest const* pQuest) const
     for (iI = 0; iI < QUEST_OBJECTIVES_COUNT; ++iI)
         data << ObjectiveText[iI];
 
+    //发送应答报文
     GetMenuSession()->SendPacket(data);
 
     DEBUG_LOG("WORLD: Sent SMSG_QUEST_QUERY_RESPONSE questid=%u", pQuest->GetQuestId());

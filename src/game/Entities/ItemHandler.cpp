@@ -277,16 +277,18 @@ void WorldSession::HandleDestroyItemOpcode(WorldPacket& recv_data)
 }
 
 // Only _static_ data send in this packet !!!
+//物品信息查询
 void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_ITEM_QUERY_SINGLE");
     uint32 item;
-    recv_data >> item;
+    recv_data >> item;  //物品ID
 
     DETAIL_LOG("STORAGE: Item Query = %u", item);
 
+    //根据物品ID查询物品信息
     ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(item);
-    if (pProto)
+    if (pProto) //如果查到, 返回物品信息
     {
         int loc_idx = GetSessionDbLocaleIndex();
 
@@ -304,26 +306,26 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
         data << uint8(0x00);                                // pProto->Name2; // blizz not send name there, just uint8(0x00); <-- \0 = empty string = empty name...
         data << uint8(0x00);                                // pProto->Name3; // blizz not send name there, just uint8(0x00);
         data << uint8(0x00);                                // pProto->Name4; // blizz not send name there, just uint8(0x00);
-        data << pProto->DisplayInfoID;
-        data << pProto->Quality;
-        data << pProto->Flags;
-        data << pProto->BuyPrice;
-        data << pProto->SellPrice;
-        data << pProto->InventoryType;
-        data << pProto->AllowableClass;
-        data << pProto->AllowableRace;
-        data << pProto->ItemLevel;
-        data << pProto->RequiredLevel;
-        data << pProto->RequiredSkill;
-        data << pProto->RequiredSkillRank;
-        data << pProto->RequiredSpell;
-        data << pProto->RequiredHonorRank;
-        data << pProto->RequiredCityRank;
-        data << pProto->RequiredReputationFaction;
-        data << pProto->RequiredReputationRank;
-        data << pProto->MaxCount;
-        data << pProto->Stackable;
-        data << pProto->ContainerSlots;
+        data << pProto->DisplayInfoID;          //显示物品编号
+        data << pProto->Quality;                //质量??
+        data << pProto->Flags;                  //标志
+        data << pProto->BuyPrice;               //购买价格
+        data << pProto->SellPrice;              //出售价格
+        data << pProto->InventoryType;          //库存类型
+        data << pProto->AllowableClass;         //允许的职业
+        data << pProto->AllowableRace;          //允许的种族
+        data << pProto->ItemLevel;              //物品级别
+        data << pProto->RequiredLevel;          //需要的等级
+        data << pProto->RequiredSkill;          //需要的技能
+        data << pProto->RequiredSkillRank;      //需要的技能等级
+        data << pProto->RequiredSpell;          //需要的法术
+        data << pProto->RequiredHonorRank;      //需要的法术等级
+        data << pProto->RequiredCityRank;       //需要的城市等级
+        data << pProto->RequiredReputationFaction;  //需要的荣誉派别
+        data << pProto->RequiredReputationRank; //需要的荣誉等级
+        data << pProto->MaxCount;               //最大携带数量
+        data << pProto->Stackable;              //是否可堆叠
+        data << pProto->ContainerSlots;         //插孔??
         for (int i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
         {
             data << pProto->ItemStat[i].ItemStatType;
@@ -337,8 +339,8 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
         }
 
         // resistances (7)
-        data << pProto->Armor;
-        data << pProto->HolyRes;
+        data << pProto->Armor;              //装甲
+        data << pProto->HolyRes;            //神圣
         data << pProto->FireRes;
         data << pProto->NatureRes;
         data << pProto->FrostRes;

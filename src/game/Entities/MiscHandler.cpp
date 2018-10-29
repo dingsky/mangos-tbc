@@ -66,6 +66,7 @@ void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
     GetPlayer()->RepopAtGraveyard();
 }
 
+//什么东东啊..................???
 void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WHO");
@@ -263,11 +264,13 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Send SMSG_WHO Message");
 }
 
+//登出请求处理
 void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_LOGOUT_REQUEST, security %u", GetSecurity());
 
     // Can not logout if...
+    //战斗状态、跳跃、坠落状态不允许登出
     if (GetPlayer()->isInCombat() ||                        //...is in combat
             //...is jumping ...is falling
             GetPlayer()->m_movementInfo.HasMovementFlag(MovementFlags(MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR)))
@@ -290,28 +293,33 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
     }
 
     // not set flags if player can't free move to prevent lost state at logout cancel
+    //如果玩家可以自由移动
     if (GetPlayer()->CanFreeMove())
     {
         float height = GetPlayer()->GetMap()->GetHeight(GetPlayer()->GetPositionX(), GetPlayer()->GetPositionY(), GetPlayer()->GetPositionZ());
         if ((GetPlayer()->GetPositionZ() < height + 0.1f) && !(GetPlayer()->IsInWater()))
             GetPlayer()->SetStandState(UNIT_STAND_STATE_SIT);
 
+        //不允许玩家移动
         GetPlayer()->SetRoot(true);
         GetPlayer()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
     }
 
+    //返回应答
     WorldPacket data(SMSG_LOGOUT_RESPONSE, 5);
     data << uint32(0);
     data << uint8(0);
     SendPacket(data);
-    LogoutRequest(time(nullptr));
+    LogoutRequest(time(nullptr));   //设置登出时间
 }
 
+//尼玛, 就打了个日志
 void WorldSession::HandlePlayerLogoutOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_PLAYER_LOGOUT Message");
 }
 
+//登出取消
 void WorldSession::HandleLogoutCancelOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_LOGOUT_CANCEL Message");
@@ -322,12 +330,15 @@ void WorldSession::HandleLogoutCancelOpcode(WorldPacket& /*recv_data*/)
     SendPacket(data);
 
     // not remove flags if can't free move - its not set in Logout request code.
+    //如果玩家可以自由移动
     if (GetPlayer()->CanFreeMove())
     {
         //!we can move again
+        //允许玩家移动
         GetPlayer()->SetRoot(false);
 
         //! Stand Up
+        //玩家站起来
         GetPlayer()->SetStandState(UNIT_STAND_STATE_STAND);
 
         //! DISABLE_ROTATE
@@ -417,6 +428,7 @@ void WorldSession::HandleStandStateChangeOpcode(WorldPacket& recv_data)
     _player->SetStandState(animstate);
 }
 
+//查询好友列表
 void WorldSession::HandleContactListOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_CONTACT_LIST");
@@ -426,6 +438,7 @@ void WorldSession::HandleContactListOpcode(WorldPacket& recv_data)
     _player->GetSocial()->SendSocialList();
 }
 
+//添加好友请求
 void WorldSession::HandleAddFriendOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_ADD_FRIEND");
@@ -433,18 +446,21 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recv_data)
     std::string friendName = GetMangosString(LANG_FRIEND_IGNORE_UNKNOWN);
     std::string friendNote;
 
-    recv_data >> friendName;
+    recv_data >> friendName;    //好友名称
 
-    recv_data >> friendNote;
+    recv_data >> friendNote;    //好友备注
 
+    //好友姓名合法性校验
     if (!normalizePlayerName(friendName))
         return;
 
+    //好友姓名去空格
     CharacterDatabase.escape_string(friendName);            // prevent SQL injection - normal name don't must changed by this call
 
     DEBUG_LOG("WORLD: %s asked to add friend : '%s'",
               GetPlayer()->GetName(), friendName.c_str());
 
+    //根据好友姓名去角色表查询好友信息, 通过回调函数返回好友信息
     CharacterDatabase.AsyncPQuery(&WorldSession::HandleAddFriendOpcodeCallBack, GetAccountId(), friendNote, "SELECT guid, race FROM characters WHERE name = '%s'", friendName.c_str());
 }
 
@@ -453,6 +469,7 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult* result, uint32 acc
     if (!result)
         return;
 
+    //好友guid
     uint32 friendLowGuid = (*result)[0].GetUInt32();
     ObjectGuid friendGuid = ObjectGuid(HIGHGUID_PLAYER, friendLowGuid);
     Team team = Player::TeamForRace((*result)[1].GetUInt8());
@@ -1145,6 +1162,7 @@ void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
         SendNotification(LANG_YOU_NOT_HAVE_PERMISSION);
 }
 
+//返回账号、邮箱、上次登录IP
 void WorldSession::HandleWhoisOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WHOIS");

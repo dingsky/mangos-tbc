@@ -214,16 +214,18 @@ void WorldSession::HandleQuestgiverQueryQuestOpcode(WorldPacket& recv_data)
         _player->PlayerTalkClass->SendQuestGiverQuestDetails(pQuest, pObject->GetObjectGuid(), true);
 }
 
+//查询问题
 void WorldSession::HandleQuestQueryOpcode(WorldPacket& recv_data)
 {
     uint32 quest;
-    recv_data >> quest;
+    recv_data >> quest; //问题ID
     DEBUG_LOG("WORLD: Received opcode CMSG_QUEST_QUERY quest = %u", quest);
 
+    //获取问题模板
     Quest const* pQuest = sObjectMgr.GetQuestTemplate(quest);
     if (pQuest)
     {
-        _player->PlayerTalkClass->SendQuestQueryResponse(pQuest);
+        _player->PlayerTalkClass->SendQuestQueryResponse(pQuest);   //发送查询应答
     }
 }
 
