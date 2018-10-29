@@ -120,6 +120,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     delete result;
 }
 
+//使用guid查询名称等相关信息
 void WorldSession::HandleNameQueryOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
