@@ -50,24 +50,28 @@ void WorldSession::SendPartyResult(PartyOperation operation, const std::string& 
     SendPacket(data);
 }
 
+//组队邀请
 void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
 {
     std::string membername;
-    recv_data >> membername;
+    recv_data >> membername;    //成员姓名
 
     // attempt add selected player
 
     // cheating
+    //姓名格式检查
     if (!normalizePlayerName(membername))
     {
         SendPartyResult(PARTY_OP_INVITE, membername, ERR_BAD_PLAYER_NAME_S);
         return;
     }
 
+    //获取玩家信息
     Player* initiator = GetPlayer();
     Player* recipient = sObjectMgr.GetPlayer(membername.c_str());
 
     // no player
+    //玩家不存在
     if (!recipient)
     {
         SendPartyResult(PARTY_OP_INVITE, membername, ERR_BAD_PLAYER_NAME_S);
@@ -75,6 +79,7 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
     }
 
     // can't group with
+    //玩家不是队长等原因不允许邀请
     if (!GetPlayer()->isGameMaster() && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_GROUP) && initiator->GetTeam() != recipient->GetTeam())
     {
         SendPartyResult(PARTY_OP_INVITE, membername, ERR_PLAYER_WRONG_FACTION);
@@ -88,12 +93,14 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
     }
 
     // just ignore us
+    //被忽略不允许邀请
     if (recipient->GetSocial()->HasIgnore(initiator->GetObjectGuid()))
     {
         SendPartyResult(PARTY_OP_INVITE, membername, ERR_IGNORING_YOU_S);
         return;
     }
 
+    //新建一个组
     Group* initiatorGroup = initiator->GetGroup();
     if (initiatorGroup && initiatorGroup->isBGGroup())
         initiatorGroup = initiator->GetOriginalGroup();
