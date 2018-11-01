@@ -2266,10 +2266,11 @@ void Player::SetGMVisible(bool on)
         SetGameMaster(true);
 
         SetVisibility(VISIBILITY_OFF);
-    }
+    } 
 }
 
 ///- If the player is invited, remove him. If the group if then only 1 person, disband the group.
+//把玩家从队伍中移除， 如果至剩下他一个人则解散团队
 void Player::UninviteFromGroup()
 {
     Group* group = GetGroupInvite();

@@ -195,16 +195,18 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recv_data)
 
 void WorldSession::HandleLootMethodOpcode(WorldPacket& recv_data)
 {
-    uint32 lootMethod;
+    uint32 lootMethod;  
     ObjectGuid lootMaster;
     uint32 lootThreshold;
     recv_data >> lootMethod >> lootMaster >> lootThreshold;
 
+　   //获取玩家所在组
     Group* group = GetPlayer()->GetGroup();
     if (!group)
         return;
 
     /** error handling **/
+    //只有组长允许
     if (!group->IsLeader(GetPlayer()->GetObjectGuid()))
         return;
     /********************/

@@ -231,22 +231,28 @@ void WorldSession::HandleGroupAcceptOpcode(WorldPacket& /*recv_data*/)
         return;
 }
 
+
+//推组请求
 void WorldSession::HandleGroupDeclineOpcode(WorldPacket& /*recv_data*/)
 {
+    //获取当前玩家所队伍
     Group*  group  = GetPlayer()->GetGroupInvite();
-    if (!group)
+    if (!group) //没有团队则直接返回
         return;
 
     // remember leader if online
+    //获取队长信息
     Player* leader = sObjectMgr.GetPlayer(group->GetLeaderGuid());
 
     // uninvite, group can be deleted
+    //将玩家从队伍中移除
     GetPlayer()->UninviteFromGroup();
 
     if (!leader || !leader->GetSession())
         return;
 
     // report
+    //通知队长, 该玩家已退组
     WorldPacket data(SMSG_GROUP_DECLINE, 10);               // guess size
     data << GetPlayer()->GetName();
     leader->GetSession()->SendPacket(data);
@@ -297,22 +303,25 @@ void WorldSession::HandleGroupUninviteGuidOpcode(WorldPacket& recv_data)
     SendPartyResult(PARTY_OP_LEAVE, "", ERR_TARGET_NOT_IN_GROUP_S);
 }
 
+//移除一个成员
 void WorldSession::HandleGroupUninviteOpcode(WorldPacket& recv_data)
 {
     std::string membername;
-    recv_data >> membername;
+    recv_data >> membername;    //成员姓名
 
     // player not found
     if (!normalizePlayerName(membername))
         return;
 
     // can't uninvite yourself
+    //不允许移除玩家自己 
     if (GetPlayer()->GetName() == membername)
     {
         sLog.outError("WorldSession::HandleGroupUninviteOpcode: leader %s tried to uninvite himself from the group.", GetPlayer()->GetGuidStr().c_str());
         return;
     }
 
+    //判断是否有移除玩家的权利, 组长和团队助手有权利
     PartyResult res = GetPlayer()->CanUninviteFromGroup();
     if (res != ERR_PARTY_RESULT_OK)
     {
@@ -320,11 +329,13 @@ void WorldSession::HandleGroupUninviteOpcode(WorldPacket& recv_data)
         return;
     }
 
+    //获取玩家所在组
     Group* grp = GetPlayer()->GetGroup();
     if (!grp)
         return;
 
     // raid assistant cannot kick leader
+    //不允许移除组长
     if (grp->GetLeaderName() == membername)
     {
         SendPartyResult(PARTY_OP_LEAVE, "", ERR_NOT_LEADER);
@@ -333,7 +344,7 @@ void WorldSession::HandleGroupUninviteOpcode(WorldPacket& recv_data)
 
     if (ObjectGuid guid = grp->GetMemberGuid(membername))
     {
-        Player::RemoveFromGroup(grp, guid);
+        Player::RemoveFromGro up(grp, guid);
         return;
     }
 
@@ -346,31 +357,36 @@ void WorldSession::HandleGroupUninviteOpcode(WorldPacket& recv_data)
     SendPartyResult(PARTY_OP_LEAVE, membername, ERR_TARGET_NOT_IN_GROUP_S);
 }
 
+//设置队长
 void WorldSession::HandleGroupSetLeaderOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
-    recv_data >> guid;
+    recv_data >> guid;  //队长guid
 
+    //获取当前玩家所在组
     Group* group = GetPlayer()->GetGroup();
     if (!group)
         return;
 
+    //获取被指定为队长的玩家信息
     Player* player = sObjectMgr.GetPlayer(guid);
 
     /** error handling **/
+    //玩家不存在、已经是队长、玩家不在同一个组里三种情况不允许设置他为队长
     if (!player || !group->IsLeader(GetPlayer()->GetObjectGuid()) || player->GetGroup() != group)
         return;
     /********************/
 
     // everything is fine, do it
+    //更换队长, 并返回
     group->ChangeLeader(guid);
 }
 
 void WorldSession::HandleGroupDisbandOpcode(WorldPacket& /*recv_data*/)
 {
-    Player* player = GetPlayer();
-    Group* group = player->GetGroup();
-    Group* groupPending = player->GetGroupInvite();
+    Player* player = GetPlayer();       //当前玩家
+    Group* group = player->GetGroup();  //玩家所在组
+    Group* groupPending = player->GetGroupInvite(); 
     if (!group && !groupPending)
         return;
 
