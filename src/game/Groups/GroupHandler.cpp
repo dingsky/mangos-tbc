@@ -108,6 +108,7 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
         initiatorGroup = initiator->GetGroupInvite();
 
     // player already invited
+    //如果已邀请
     if (recipient->GetGroupInvite())
     {
         SendPartyResult(PARTY_OP_INVITE, membername, ERR_ALREADY_IN_GROUP_S);
@@ -119,6 +120,7 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
         recipientGroup = recipient->GetOriginalGroup();
 
     // player already in another group
+    //玩家在其他的组里
     if (recipientGroup)
     {
         SendPartyResult(PARTY_OP_INVITE, membername, ERR_ALREADY_IN_GROUP_S);
@@ -177,12 +179,15 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
     SendPartyResult(PARTY_OP_INVITE, membername, ERR_PARTY_RESULT_OK);
 }
 
+//接受组队邀请
 void WorldSession::HandleGroupAcceptOpcode(WorldPacket& /*recv_data*/)
 {
+    //获取组队邀请
     Group* group = GetPlayer()->GetGroupInvite();
     if (!group)
         return;
 
+    //队长不能邀请自己
     if (group->GetLeaderGuid() == GetPlayer()->GetObjectGuid())
     {
         sLog.outError("HandleGroupAcceptOpcode: %s tried to accept an invite to his own group",
@@ -191,21 +196,25 @@ void WorldSession::HandleGroupAcceptOpcode(WorldPacket& /*recv_data*/)
     }
 
     // remove in from invites in any case
+    //清除该组队该玩家的邀请
     group->RemoveInvite(GetPlayer());
 
     /** error handling **/
     /********************/
 
     // not have place
+    //如果这个组满了
     if (group->IsFull())
     {
         SendPartyResult(PARTY_OP_INVITE, "", ERR_GROUP_FULL);
         return;
     }
 
+    //获取队长信息
     Player* leader = sObjectMgr.GetPlayer(group->GetLeaderGuid());
 
     // forming a new group, create it
+    //如果来自一个新的组, 则创建它
     if (!group->IsCreated())
     {
         if (leader)
@@ -217,6 +226,7 @@ void WorldSession::HandleGroupAcceptOpcode(WorldPacket& /*recv_data*/)
     }
 
     // everything is fine, do it, PLAYER'S GROUP IS SET IN ADDMEMBER!!!
+    //把组员添加到组里, 返回信息给客户端
     if (!group->AddMember(GetPlayer()->GetObjectGuid(), GetPlayer()->GetName()))
         return;
 }
