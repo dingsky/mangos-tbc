@@ -57,14 +57,16 @@ bool WorldSession::processChatmessageFurtherAfterSecurityChecks(std::string& msg
     return true;
 }
 
+//消息聊天
 void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 {
     uint32 type;
     uint32 lang;
 
-    recv_data >> type;
-    recv_data >> lang;
+    recv_data >> type;  //消息类型
+    recv_data >> lang;  //消息语言ID
 
+    //检查消息类型
     if (type >= MAX_CHAT_MSG_TYPE)
     {
         sLog.outError("CHAT: Wrong message type received: %u", type);
@@ -74,15 +76,19 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
     DEBUG_LOG("CHAT: packet received. type %u, lang %u", type, lang);
 
     // prevent talking at unknown language (cheating)
+    //根据语言ID获取语言描述
     LanguageDesc const* langDesc = GetLanguageDescByID(lang);
     if (!langDesc)
     {
         SendNotification(LANG_UNKNOWN_LANGUAGE);
         return;
     }
+
+    //如果玩家能够识别该语言, 兽人语啥的?
     if (langDesc->skill_id != 0 && !_player->HasSkill(langDesc->skill_id))
     {
         // also check SPELL_AURA_COMPREHEND_LANGUAGE (client offers option to speak in that language)
+        //获取玩家的语言列表, 检查该语言是否在列表里
         Unit::AuraList const& langAuras = _player->GetAurasByType(SPELL_AURA_COMPREHEND_LANGUAGE);
         bool foundAura = false;
         for (Unit::AuraList::const_iterator i = langAuras.begin(); i != langAuras.end(); ++i)
@@ -93,7 +99,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 break;
             }
         }
-        if (!foundAura)
+        if (!foundAura) //如果不在, 返回错误
         {
             SendNotification(LANG_NOT_LEARNED_LANGUAGE);
             return;
@@ -110,16 +116,17 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
     else
     {
         // send in universal language if player in .gmon mode (ignore spell effects)
-        if (_player->isGameMaster())
+        if (_player->isGameMaster())    //如果玩家是GM, 则语言是大家都能识别的
             lang = LANG_UNIVERSAL;
         else
         {
             // send in universal language in two side iteration allowed mode
+            //如果配置了允许对立阵营对话, 那么语言也是大家都能识别的
             if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT))
                 lang = LANG_UNIVERSAL;
             else
             {
-                switch (type)
+                switch (type)   //判断语言类型, 团队/公会聊天类型处理
                 {
                     case CHAT_MSG_PARTY:
                     case CHAT_MSG_RAID:
@@ -157,16 +164,17 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
         }
     }
 
+    //判断消息类型
     switch (type)
     {
-        case CHAT_MSG_SAY:
-        case CHAT_MSG_EMOTE:
-        case CHAT_MSG_YELL:
+        case CHAT_MSG_SAY:          //说话
+        case CHAT_MSG_EMOTE:        //表情
+        case CHAT_MSG_YELL:         //大喊
         {
             std::string msg;
-            recv_data >> msg;
+            recv_data >> msg;       //消息内容
 
-            if (msg.empty())
+            if (msg.empty())        //消息空判断
                 break;
 
             if (ChatHandler(this).ParseCommands(msg.c_str()))
@@ -179,18 +187,18 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 break;
 
             if (type == CHAT_MSG_SAY)
-                GetPlayer()->Say(msg, lang);
+                GetPlayer()->Say(msg, lang);    //说话
             else if (type == CHAT_MSG_EMOTE)
-                GetPlayer()->TextEmote(msg);
-            else if (type == CHAT_MSG_YELL)
-                GetPlayer()->Yell(msg, lang);
+                GetPlayer()->TextEmote(msg);    //表情
+            else if (type == CHAT_MSG_YELL)     
+                GetPlayer()->Yell(msg, lang);   //大喊
         } break;
 
-        case CHAT_MSG_WHISPER:
+        case CHAT_MSG_WHISPER:  //私聊
         {
             std::string to, msg;
-            recv_data >> to;
-            recv_data >> msg;
+            recv_data >> to;    //私聊对象
+            recv_data >> msg;   //私聊消息
 
             if (msg.empty())
                 break;
@@ -207,6 +215,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 break;
             }
 
+            //获取私聊玩家信息
             Player* player = sObjectMgr.GetPlayer(to.c_str());
             uint32 tSecurity = GetSecurity();
             uint32 pSecurity = player ? player->GetSession()->GetSecurity() : SEC_PLAYER;
@@ -225,10 +234,11 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 }
             }
 
+            //给私聊玩家发消息
             GetPlayer()->Whisper(msg, lang, player->GetObjectGuid());
         } break;
 
-        case CHAT_MSG_PARTY:
+        case CHAT_MSG_PARTY:    //队伍聊天
         {
             std::string msg;
             recv_data >> msg;
@@ -254,13 +264,14 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     return;
             }
 
+            //把消息广播给队伍里成员
             WorldPacket data;
             ChatHandler::BuildChatPacket(data, ChatMsg(type), msg.c_str(), Language(lang), _player->GetChatTag(), _player->GetObjectGuid(), _player->GetName());
             group->BroadcastPacket(data, false, group->GetMemberGroup(GetPlayer()->GetObjectGuid()));
 
             break;
         }
-        case CHAT_MSG_GUILD:
+        case CHAT_MSG_GUILD:    //公会聊天
         {
             std::string msg;
             recv_data >> msg;
@@ -277,13 +288,14 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (msg.empty())
                 break;
 
+            //把消息广播给公会的成员
             if (GetPlayer()->GetGuildId())
                 if (Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId()))
                     guild->BroadcastToGuild(this, msg, lang == LANG_ADDON ? LANG_ADDON : LANG_UNIVERSAL);
 
             break;
         }
-        case CHAT_MSG_OFFICER:
+        case CHAT_MSG_OFFICER:  //官员聊天
         {
             std::string msg;
             recv_data >> msg;
@@ -300,13 +312,14 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (msg.empty())
                 break;
 
-            if (GetPlayer()->GetGuildId())
+            //把消息广播给公会的官员
+            if (GetPlayer()->GetGuildId())  
                 if (Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId()))
                     guild->BroadcastToOfficers(this, msg, lang == LANG_ADDON ? LANG_ADDON : LANG_UNIVERSAL);
 
             break;
         }
-        case CHAT_MSG_RAID:
+        case CHAT_MSG_RAID: //团队聊天
         {
             std::string msg;
             recv_data >> msg;
@@ -336,7 +349,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             ChatHandler::BuildChatPacket(data, CHAT_MSG_RAID, msg.c_str(), Language(lang), _player->GetChatTag(), _player->GetObjectGuid(), _player->GetName());
             group->BroadcastPacket(data, false);
         } break;
-        case CHAT_MSG_RAID_LEADER:
+        case CHAT_MSG_RAID_LEADER:  //团队领袖聊天
         {
             std::string msg;
             recv_data >> msg;
@@ -367,7 +380,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             group->BroadcastPacket(data, false);
         } break;
 
-        case CHAT_MSG_RAID_WARNING:
+        case CHAT_MSG_RAID_WARNING: //团队警告聊天
         {
             std::string msg;
             recv_data >> msg;
@@ -389,7 +402,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             group->BroadcastPacket(data, false);
         } break;
 
-        case CHAT_MSG_BATTLEGROUND:
+        case CHAT_MSG_BATTLEGROUND: //战场聊天
         {
             std::string msg;
             recv_data >> msg;
@@ -402,7 +415,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             // battleground raid is always in Player->GetGroup(), never in GetOriginalGroup()
             Group* group = GetPlayer()->GetGroup();
-            if (!group || !group->isBGGroup())
+            if (!group || !group->isBGGroup())  //如果不是战场团队, 则直接返回
                 return;
 
             WorldPacket data;
@@ -410,7 +423,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             group->BroadcastPacket(data, false);
         } break;
 
-        case CHAT_MSG_BATTLEGROUND_LEADER:
+        case CHAT_MSG_BATTLEGROUND_LEADER:  //战场领袖聊天
         {
             std::string msg;
             recv_data >> msg;
@@ -431,11 +444,11 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             group->BroadcastPacket(data, false);
         } break;
 
-        case CHAT_MSG_CHANNEL:
+        case CHAT_MSG_CHANNEL:  //频道聊天
         {
             std::string channel, msg;
-            recv_data >> channel;
-            recv_data >> msg;
+            recv_data >> channel;   //频道
+            recv_data >> msg;       //消息
 
             if (!processChatmessageFurtherAfterSecurityChecks(msg, lang))
                 return;
@@ -443,12 +456,13 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (msg.empty())
                 break;
 
+            //把消息广播给频道中的成员
             if (ChannelMgr* cMgr = channelMgr(_player->GetTeam()))
                 if (Channel* chn = cMgr->GetChannel(channel, _player))
                     chn->Say(_player, msg.c_str(), lang);
         } break;
 
-        case CHAT_MSG_AFK:
+        case CHAT_MSG_AFK:      //AFK消息, 玩家退出
         {
             std::string msg;
             recv_data >> msg;
@@ -474,7 +488,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             }
             break;
         }
-        case CHAT_MSG_DND:
+        case CHAT_MSG_DND:  //请勿打扰消息?
         {
             std::string msg;
             recv_data >> msg;

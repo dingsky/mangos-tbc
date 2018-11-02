@@ -542,31 +542,38 @@ void WorldSession::HandleGuildLeaderOpcode(WorldPacket& recvPacket)
     guild->BroadcastEvent(GE_LEADER_CHANGED, oldLeader->GetName(), name.c_str());
 }
 
+//设置公会公告
 void WorldSession::HandleGuildMOTDOpcode(WorldPacket& recvPacket)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_GUILD_MOTD");
 
     std::string MOTD;
 
+    //公会公告
     if (!recvPacket.empty())
         recvPacket >> MOTD;
     else
-        MOTD.clear();
+        MOTD.clear();   //没有则置为空
 
+    //获取玩家所在公会
     Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId());
     if (!guild)
     {
         SendGuildCommandResult(GUILD_CREATE_S, "", ERR_GUILD_PLAYER_NOT_IN_GUILD);
         return;
     }
+
+    //检查玩家是否有权限修改公告
     if (!guild->HasRankRight(GetPlayer()->GetRank(), GR_RIGHT_SETMOTD))
     {
         SendGuildCommandResult(GUILD_INVITE_S, "", ERR_GUILD_PERMISSIONS);
         return;
     }
 
+    //设置公会公告
     guild->SetMOTD(MOTD);
 
+    //向所有公会成员广播一下公会公告的修改
     guild->BroadcastEvent(GE_MOTD, MOTD.c_str());
 }
 
