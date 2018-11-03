@@ -40,17 +40,21 @@ void WorldSession::HandleMoveWorldportAckOpcode(WorldPacket& /*recv_data*/)
 void WorldSession::HandleMoveWorldportAckOpcode()
 {
     // ignore unexpected far teleports
+    //玩家正在远程传送中, 不允许再次发起
     if (!GetPlayer()->IsBeingTeleportedFar())
         return;
 
     // get start teleport coordinates (will used later in fail case)
+    //获取起始坐标
     WorldLocation old_loc;
     GetPlayer()->GetPosition(old_loc);
 
     // get the teleport destination
+    //获取目标坐标
     WorldLocation& loc = GetPlayer()->GetTeleportDest();
 
     // possible errors in the coordinate validity check (only cheating case possible)
+    //检查目标坐标是否有效
     if (!MapManager::IsValidMapCoord(loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z, loc.orientation))
     {
         sLog.outError("WorldSession::HandleMoveWorldportAckOpcode: %s was teleported far to a not valid location "
@@ -186,6 +190,7 @@ void WorldSession::HandleMoveWorldportAckOpcode()
         _player->SetGroupUpdateFlag(GROUP_UPDATE_FULL);
 }
 
+//传送处理
 void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("MSG_MOVE_TELEPORT_ACK");
@@ -202,18 +207,22 @@ void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
     Unit* mover = _player->GetMover();
     Player* plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : nullptr;
 
+    //正在传送中
     if (!plMover || !plMover->IsBeingTeleportedNear())
         return;
 
+    //检查传送者身份
     if (guid != plMover->GetObjectGuid())
         return;
 
     plMover->SetSemaphoreTeleportNear(false);
 
+    //旧的区域ID
     uint32 old_zone = plMover->GetZoneId();
 
     WorldLocation const& dest = plMover->GetTeleportDest();
 
+    //更新传送后的坐标和区域
     plMover->SetPosition(dest.coord_x, dest.coord_y, dest.coord_z, dest.orientation, true);
 
     uint32 newzone, newarea;
@@ -221,6 +230,7 @@ void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
     plMover->UpdateZone(newzone, newarea);
 
     // new zone
+    //跨区域处理
     if (old_zone != newzone)
     {
         // honorless target
@@ -229,14 +239,18 @@ void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
     }
 
     // resummon pet
+    //恢复宠物
     GetPlayer()->ResummonPetTemporaryUnSummonedIfAny();
 
     // lets process all delayed operations on successful teleport
+    //延迟操作
     GetPlayer()->ProcessDelayedOperations();
 }
 
+//移动处理
 void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
 {
+    //提取移动操作
     Opcodes opcode = recv_data.GetOpcode();
     if (!sLog.HasLogFilter(LOG_FILTER_PLAYER_MOVES))
     {
@@ -248,6 +262,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     Player* plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : nullptr;
 
     // ignore, waiting processing in WorldSession::HandleMoveWorldportAckOpcode and WorldSession::HandleMoveTeleportAck
+    //正在传送中, 不允许移动
     if (plMover && plMover->IsBeingTeleported())
     {
         recv_data.rpos(recv_data.wpos());                   // prevent warnings spam
@@ -255,33 +270,41 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     }
 
     /* extract packet */
+    //提取移动信息
     MovementInfo movementInfo;
     recv_data >> movementInfo;
     /*----------------*/
 
+    //检查移动信息
     if (!VerifyMovementInfo(movementInfo))
         return;
 
     // fall damage generation (ignore in flight case that can be triggered also at lags in moment teleportation to another map).
+    //下落处理
     if (opcode == MSG_MOVE_FALL_LAND && plMover && !plMover->IsTaxiFlying())
         plMover->HandleFall(movementInfo);
 
     // Remove auras that should be removed at landing on ground or water
+    //下落和开始游泳时, 去除着陆状态
     if (opcode == MSG_MOVE_FALL_LAND || opcode == MSG_MOVE_START_SWIM)
         mover->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LANDING); // Parachutes
 
     /* process position-change */
+    //移动处理
     HandleMoverRelocation(movementInfo);
 
+    //更新位置信息
     if (plMover)
         plMover->UpdateFallInformationIfNeed(movementInfo, opcode);
 
+    //返回应答
     WorldPacket data(opcode, recv_data.size());
     data << mover->GetPackGUID();                           // write guid
     movementInfo.Write(data);                               // write data
     mover->SendMessageToSetExcept(data, _player);
 }
 
+//强行改变速度
 void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
 {
     Opcodes opcode = recv_data.GetOpcode();
@@ -294,10 +317,11 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
 
     recv_data >> guid;
     recv_data >> Unused<uint32>();                          // counter or moveEvent
-    recv_data >> movementInfo;
-    recv_data >> newspeed;
+    recv_data >> movementInfo;  //移动信息
+    recv_data >> newspeed;      //新的移动速度
 
     // now can skip not our packet
+    //不是当前玩家, 不允许操作
     if (_player->GetObjectGuid() != guid)
         return;
     /*----------------*/
@@ -308,7 +332,7 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
     UnitMoveType force_move_type;
 
     static char const* move_type_name[MAX_MOVE_TYPE] = {  "Walk", "Run", "RunBack", "Swim", "SwimBack", "TurnRate", "Flight", "FlightBack" };
-
+    //根据操作码设置移动状态和强制修改后移动状态
     switch (opcode)
     {
         case CMSG_FORCE_WALK_SPEED_CHANGE_ACK:          move_type = MOVE_WALK;          force_move_type = MOVE_WALK;        break;
@@ -345,7 +369,7 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
         {
             BASIC_LOG("Player %s from account id %u kicked for incorrect speed (must be %f instead %f)",
                       _player->GetName(), _player->GetSession()->GetAccountId(), _player->GetSpeed(move_type), newspeed);
-            _player->GetSession()->KickPlayer();
+            _player->GetSession()->KickPlayer();    //玩家如果速度快过, 则把他干掉, 这里是为了防加速外挂么
         }
     }
 }

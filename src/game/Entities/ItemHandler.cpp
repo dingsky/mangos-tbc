@@ -277,18 +277,18 @@ void WorldSession::HandleDestroyItemOpcode(WorldPacket& recv_data)
 }
 
 // Only _static_ data send in this packet !!!
-//ç‰©å“ä¿¡æ¯æŸ¥è¯¢
+//ÎïÆ·ĞÅÏ¢²éÑ¯
 void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_ITEM_QUERY_SINGLE");
     uint32 item;
-    recv_data >> item;  //ç‰©å“ID
+    recv_data >> item;  //ÎïÆ·ID
 
     DETAIL_LOG("STORAGE: Item Query = %u", item);
 
-    //æ ¹æ®ç‰©å“IDæŸ¥è¯¢ç‰©å“ä¿¡æ¯
+    //¸ù¾İÎïÆ·ID²éÑ¯ÎïÆ·ĞÅÏ¢
     ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(item);
-    if (pProto) //å¦‚æœæŸ¥åˆ°, è¿”å›ç‰©å“ä¿¡æ¯
+    if (pProto) //Èç¹û²éµ½, ·µ»ØÎïÆ·ĞÅÏ¢
     {
         int loc_idx = GetSessionDbLocaleIndex();
 
@@ -306,26 +306,26 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
         data << uint8(0x00);                                // pProto->Name2; // blizz not send name there, just uint8(0x00); <-- \0 = empty string = empty name...
         data << uint8(0x00);                                // pProto->Name3; // blizz not send name there, just uint8(0x00);
         data << uint8(0x00);                                // pProto->Name4; // blizz not send name there, just uint8(0x00);
-        data << pProto->DisplayInfoID;          //æ˜¾ç¤ºç‰©å“ç¼–å·
-        data << pProto->Quality;                //è´¨é‡??
-        data << pProto->Flags;                  //æ ‡å¿—
-        data << pProto->BuyPrice;               //è´­ä¹°ä»·æ ¼
-        data << pProto->SellPrice;              //å‡ºå”®ä»·æ ¼
-        data << pProto->InventoryType;          //åº“å­˜ç±»å‹
-        data << pProto->AllowableClass;         //å…è®¸çš„èŒä¸š
-        data << pProto->AllowableRace;          //å…è®¸çš„ç§æ—
-        data << pProto->ItemLevel;              //ç‰©å“çº§åˆ«
-        data << pProto->RequiredLevel;          //éœ€è¦çš„ç­‰çº§
-        data << pProto->RequiredSkill;          //éœ€è¦çš„æŠ€èƒ½
-        data << pProto->RequiredSkillRank;      //éœ€è¦çš„æŠ€èƒ½ç­‰çº§
-        data << pProto->RequiredSpell;          //éœ€è¦çš„æ³•æœ¯
-        data << pProto->RequiredHonorRank;      //éœ€è¦çš„æ³•æœ¯ç­‰çº§
-        data << pProto->RequiredCityRank;       //éœ€è¦çš„åŸå¸‚ç­‰çº§
-        data << pProto->RequiredReputationFaction;  //éœ€è¦çš„è£èª‰æ´¾åˆ«
-        data << pProto->RequiredReputationRank; //éœ€è¦çš„è£èª‰ç­‰çº§
-        data << pProto->MaxCount;               //æœ€å¤§æºå¸¦æ•°é‡
-        data << pProto->Stackable;              //æ˜¯å¦å¯å †å 
-        data << pProto->ContainerSlots;         //æ’å­”??
+        data << pProto->DisplayInfoID;          //ÏÔÊ¾ÎïÆ·±àºÅ
+        data << pProto->Quality;                //ÖÊÁ¿??
+        data << pProto->Flags;                  //±êÖ¾
+        data << pProto->BuyPrice;               //¹ºÂò¼Û¸ñ
+        data << pProto->SellPrice;              //³öÊÛ¼Û¸ñ
+        data << pProto->InventoryType;          //¿â´æÀàĞÍ
+        data << pProto->AllowableClass;         //ÔÊĞíµÄÖ°Òµ
+        data << pProto->AllowableRace;          //ÔÊĞíµÄÖÖ×å
+        data << pProto->ItemLevel;              //ÎïÆ·¼¶±ğ
+        data << pProto->RequiredLevel;          //ĞèÒªµÄµÈ¼¶
+        data << pProto->RequiredSkill;          //ĞèÒªµÄ¼¼ÄÜ
+        data << pProto->RequiredSkillRank;      //ĞèÒªµÄ¼¼ÄÜµÈ¼¶
+        data << pProto->RequiredSpell;          //ĞèÒªµÄ·¨Êõ
+        data << pProto->RequiredHonorRank;      //ĞèÒªµÄ·¨ÊõµÈ¼¶
+        data << pProto->RequiredCityRank;       //ĞèÒªµÄ³ÇÊĞµÈ¼¶
+        data << pProto->RequiredReputationFaction;  //ĞèÒªµÄÈÙÓşÅÉ±ğ
+        data << pProto->RequiredReputationRank; //ĞèÒªµÄÈÙÓşµÈ¼¶
+        data << pProto->MaxCount;               //×î´óĞ¯´øÊıÁ¿
+        data << pProto->Stackable;              //ÊÇ·ñ¿É¶Ñµş
+        data << pProto->ContainerSlots;         //²å¿×??
         for (int i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
         {
             data << pProto->ItemStat[i].ItemStatType;
@@ -339,8 +339,8 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
         }
 
         // resistances (7)
-        data << pProto->Armor;              //è£…ç”²
-        data << pProto->HolyRes;            //ç¥åœ£
+        data << pProto->Armor;              //×°¼×
+        data << pProto->HolyRes;            //ÉñÊ¥
         data << pProto->FireRes;
         data << pProto->NatureRes;
         data << pProto->FrostRes;
@@ -428,6 +428,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
     }
 }
 
+//¶ÁÈ¡ÎïÆ·
 void WorldSession::HandleReadItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: Received opcode CMSG_READ_ITEM");
@@ -436,12 +437,15 @@ void WorldSession::HandleReadItemOpcode(WorldPacket& recv_data)
     recv_data >> bag >> slot;
 
     // sLog.outDetail("STORAGE: Read bag = %u, slot = %u", bag, slot);
-    Item* pItem = _player->GetItemByPos(bag, slot);
+    //»ñÈ¡ÎïÆ·ĞÅÏ¢
+    Item* pItem = _player->GetItemByPos(bag, slot); 
 
+    //Èç¹ûÎïÆ·ÊôĞÔÊÇÎÄ±¾Ò³
     if (pItem && pItem->GetProto()->PageText)
     {
         WorldPacket data;
 
+        //ÅĞ¶ÏÊÇ·ñ¿ÉÒÔÊ¹ÓÃ
         InventoryResult msg = _player->CanUseItem(pItem);
         if (msg == EQUIP_ERR_OK)
         {
@@ -455,6 +459,8 @@ void WorldSession::HandleReadItemOpcode(WorldPacket& recv_data)
             _player->SendEquipError(msg, pItem, nullptr);
         }
         data << ObjectGuid(pItem->GetObjectGuid());
+
+        //·µ»ØÓ¦´ğ
         SendPacket(data);
     }
     else

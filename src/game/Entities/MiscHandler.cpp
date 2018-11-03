@@ -719,12 +719,14 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     DEBUG_LOG("Trigger ID: %u", Trigger_ID);
     Player* player = GetPlayer();
 
+    //如果玩家在飞行中, 忽略区域触发器
     if (player->IsTaxiFlying())
     {
         DEBUG_LOG("Player '%s' (GUID: %u) in flight, ignore Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
         return;
     }
 
+    //查找触发器信息
     AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(Trigger_ID);
     if (!atEntry)
     {
@@ -736,6 +738,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     const float delta = 5.0f;
 
     // check if player in the range of areatrigger
+    //查找玩家是否在触发器范围内
     if (!IsPointInAreaTriggerZone(atEntry, player->GetMapId(), player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), delta))
     {
         DEBUG_LOG("Player '%s' (GUID: %u) too far, ignore Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);

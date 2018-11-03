@@ -1146,7 +1146,7 @@ void GameObject::Use(Unit* user)
 
     switch (GetGoType())
     {
-        case GAMEOBJECT_TYPE_DOOR:                          // 0
+        case GAMEOBJECT_TYPE_DOOR:                          // 0 门
         {
             // doors never really despawn, only reset to default state/flags
             UseDoorOrButton();
@@ -1156,7 +1156,7 @@ void GameObject::Use(Unit* user)
                 GetMap()->ScriptsStart(sGameObjectScripts, GetGUIDLow(), spellCaster, this);
             return;
         }
-        case GAMEOBJECT_TYPE_BUTTON:                        // 1
+        case GAMEOBJECT_TYPE_BUTTON:                        // 1 按钮
         {
             // buttons never really despawn, only reset to default state/flags
             UseDoorOrButton();
@@ -1169,7 +1169,7 @@ void GameObject::Use(Unit* user)
 
             return;
         }
-        case GAMEOBJECT_TYPE_QUESTGIVER:                    // 2
+        case GAMEOBJECT_TYPE_QUESTGIVER:                    // 2 追随者
         {
             if (user->GetTypeId() != TYPEID_PLAYER)
                 return;
@@ -1184,7 +1184,7 @@ void GameObject::Use(Unit* user)
 
             return;
         }
-        case GAMEOBJECT_TYPE_CHEST:                         // 3
+        case GAMEOBJECT_TYPE_CHEST:                         // 3 箱子
         {
             if (user->GetTypeId() != TYPEID_PLAYER)
                 return;
@@ -1200,7 +1200,7 @@ void GameObject::Use(Unit* user)
 
             return;
         }
-        case GAMEOBJECT_TYPE_GENERIC:                       // 5
+        case GAMEOBJECT_TYPE_GENERIC:                       // 5 //通用的
         {
             if (scriptReturnValue)
                 return;
@@ -1209,7 +1209,7 @@ void GameObject::Use(Unit* user)
             SetLootState(GO_JUST_DEACTIVATED);
             return;
         }
-        case GAMEOBJECT_TYPE_TRAP:                          // 6
+        case GAMEOBJECT_TYPE_TRAP:                          // 6 陷阱
         {
             if (scriptReturnValue)
                 return;
@@ -1249,7 +1249,7 @@ void GameObject::Use(Unit* user)
             // TODO: Despawning of traps? (Also related to code in ::Update)
             return;
         }
-        case GAMEOBJECT_TYPE_CHAIR:                         // 7 Sitting: Wooden bench, chairs
+        case GAMEOBJECT_TYPE_CHAIR:                         // 7 Sitting: Wooden bench, chairs 椅子
         {
             GameObjectInfo const* info = GetGOInfo();
             if (!info)
@@ -1309,7 +1309,7 @@ void GameObject::Use(Unit* user)
             player->SetStandState(UNIT_STAND_STATE_SIT_LOW_CHAIR + info->chair.height);
             return;
         }
-        case GAMEOBJECT_TYPE_SPELL_FOCUS:                   // 8
+        case GAMEOBJECT_TYPE_SPELL_FOCUS:                   // 8 焦点
         {
             TriggerLinkedGameObject(user);
 

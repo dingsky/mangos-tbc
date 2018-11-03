@@ -30,6 +30,7 @@
 #include "Spells/SpellAuras.h"
 #include "Loot/LootMgr.h"
 
+//使用物品
 void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
 {
     uint8 bagIndex, slot;
@@ -40,15 +41,17 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
     recvPacket >> bagIndex >> slot >> spell_index >> cast_count >> itemGuid;
 
     // TODO: add targets.read() check
-    Player* pUser = _player;
+    Player* pUser = _player;    //使用物品
 
     // ignore for remote control state
+    //忽略远程控制状态
     if (!pUser->IsSelfMover())
     {
         recvPacket.rpos(recvPacket.wpos());                 // prevent spam at not read packet tail
         return;
     }
 
+    //根据背包索引+位置索引获取物品信息
     Item* pItem = pUser->GetItemByPos(bagIndex, slot);
     if (!pItem)
     {
@@ -57,6 +60,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //检查客户端上送的物品ID和后台维护的是否一致
     if (pItem->GetObjectGuid() != itemGuid)
     {
         recvPacket.rpos(recvPacket.wpos());                 // prevent spam at not read packet tail
@@ -66,6 +70,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
 
     DETAIL_LOG("WORLD: CMSG_USE_ITEM packet, bagIndex: %u, slot: %u, spell_count: %u , Item: %u, data length = %u", bagIndex, slot, spell_index, pItem->GetEntry(), (uint32)recvPacket.size());
 
+    //获取物品原型
     ItemPrototype const* proto = pItem->GetProto();
     if (!proto)
     {
@@ -75,6 +80,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
     }
 
     // some item classes can be used only in equipped state
+    //只有装备该物品才能使用
     if (proto->InventoryType != INVTYPE_NON_EQUIP && !pItem->IsEquipped())
     {
         recvPacket.rpos(recvPacket.wpos());                 // prevent spam at not read packet tail
@@ -82,6 +88,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //判断玩家是否可以使用该物品
     InventoryResult msg = pUser->CanUseItem(pItem);
     if (msg != EQUIP_ERR_OK)
     {
@@ -91,6 +98,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
     }
 
     // not allow use item from trade (cheat way only)
+    //正在交易中的物品不允许使用
     if (pItem->IsInTrade())
     {
         recvPacket.rpos(recvPacket.wpos());                 // prevent spam at not read packet tail
@@ -99,6 +107,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
     }
 
     // only allow conjured consumable, bandage, poisons (all should have the 2^21 item flag set in DB)
+    //在竞技场里的物品使用限制
     if (proto->Class == ITEM_CLASS_CONSUMABLE &&
             !(proto->Flags & ITEM_FLAG_IGNORE_DEFAULT_ARENA_RESTRICTIONS) &&
             pUser->InArena())
@@ -108,6 +117,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //如果玩家在战斗中, 非战斗状态下的物品技能是不允许使用的
     if (pUser->isInCombat())
     {
         for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
@@ -125,6 +135,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
     }
 
     // check also  BIND_WHEN_PICKED_UP and BIND_QUEST_ITEM for .additem or .additemset case by GM (not binded at adding to inventory)
+    //如果物品是使用时绑定或拾取时绑定或绑定任务项,将物品和玩家绑定
     if (pItem->GetProto()->Bonding == BIND_WHEN_USE || pItem->GetProto()->Bonding == BIND_WHEN_PICKED_UP || pItem->GetProto()->Bonding == BIND_QUEST_ITEM)
     {
         if (!pItem->IsSoulBound())
@@ -134,12 +145,15 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
         }
     }
 
+    //施法目标
     SpellCastTargets targets;
 
+    //读取释放目标列表
     recvPacket >> targets.ReadForCaster(pUser);
 
     targets.Update(pUser);
 
+    //如果法术不能堆目标释放, 则释放物品
     if (!pItem->IsTargetValidForItemUse(targets.getUnitTarget()))
     {
         // free gray item after use fail
@@ -163,6 +177,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
     }
 
     // Note: If script stop casting it must send appropriate data to client to prevent stuck item in gray state.
+    //使用物品
     if (!sScriptDevAIMgr.OnItemUse(pUser, pItem, targets))
     {
         // no script or script not process request by self
@@ -176,6 +191,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
 #define OPEN_BOOTY_CHEST 5107
 #define OPEN_STRONGBOX 8517
 
+//打开物品
 void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
 {
     DETAIL_LOG("WORLD: CMSG_OPEN_ITEM packet, data length = " SIZEFMTD, recvPacket.size());
@@ -186,12 +202,14 @@ void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
 
     DETAIL_LOG("bagIndex: %u, slot: %u", bagIndex, slot);
 
-    Player* pUser = _player;
+    Player* pUser = _player;    //玩家信息
 
     // ignore for remote control state
+    //只有玩家自己可以打开
     if (!pUser->IsSelfMover())
         return;
 
+    //根据背包索引和位置索引打开获取物品信息
     Item* pItem = pUser->GetItemByPos(bagIndex, slot);
     if (!pItem)
     {
@@ -199,6 +217,7 @@ void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //获取物品原型
     ItemPrototype const* proto = pItem->GetProto();
     if (!proto)
     {
@@ -207,6 +226,7 @@ void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
     }
 
     // locked item
+    //锁住物品
     uint32 lockId = proto->LockID;
     if (lockId && !pItem->HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_UNLOCKED))
     {
@@ -227,6 +247,7 @@ void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
         }
     }
 
+    //如果物品是礼物的话, 则把他从礼物表中清除
     if (pItem->HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_WRAPPED))// wrapped?
     {
         QueryResult* result = CharacterDatabase.PQuery("SELECT entry, flags FROM character_gifts WHERE item_guid = '%u'", pItem->GetGUIDLow());
@@ -260,10 +281,11 @@ void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
         if (!loot)
             loot = new Loot(pUser, pItem, LOOT_PICKPOCKETING);
 
-        loot->ShowContentTo(pUser);
+        loot->ShowContentTo(pUser); //显示内容
     }
 }
 
+//游戏对象使用
 void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -273,17 +295,21 @@ void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Received opcode CMSG_GAMEOBJ_USE guid: %s", guid.GetString().c_str());
 
     // ignore for remote control state
+    //只有玩家自己才可以使用
     if (!_player->IsSelfMover())
         return;
 
+    //根据guid获取游戏对象
     GameObject* obj = _player->GetMap()->GetGameObject(guid);
     if (!obj)
         return;
 
+    //如果游戏对象不在地图内
     if (!obj->IsWithinDistInMap(_player, obj->GetInteractionDistance()))
         return;
 
     // Additional check preventing exploits (ie loot despawned chests)
+    //附加检查, 防止漏洞
     if (!obj->isSpawned())
     {
         sLog.outError("HandleGameObjectUseOpcode: CMSG_GAMEOBJ_USE for despawned GameObject (Entry %u), didn't expect this to happen.", obj->GetEntry());
@@ -291,6 +317,7 @@ void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
     }
 
     // Never expect this opcode for some type GO's
+    //通用游戏对象不允许使用
     if (obj->GetGoType() == GAMEOBJECT_TYPE_GENERIC)
     {
         sLog.outError("HandleGameObjectUseOpcode: CMSG_GAMEOBJ_USE for not allowed GameObject type %u (Entry %u), didn't expect this to happen.", obj->GetGoType(), obj->GetEntry());
@@ -298,12 +325,14 @@ void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
     }
 
     // Never expect this opcode for non intractable GO's
+    //没有交互作用的物品对象不允许使用
     if (obj->HasFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT))
     {
         sLog.outError("HandleGameObjectUseOpcode: CMSG_GAMEOBJ_USE for GameObject (Entry %u) with non intractable flag (Flags %u), didn't expect this to happen.", obj->GetEntry(), obj->GetUInt32Value(GAMEOBJECT_FLAGS));
         return;
     }
 
+    //使用游戏对象, 桌子、椅子、邮箱、旗帜这些东西
     obj->Use(_player);
 }
 
