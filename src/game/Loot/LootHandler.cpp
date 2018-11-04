@@ -27,6 +27,7 @@
 #include "Entities/Object.h"
 #include "Groups/Group.h"
 
+//物品掉落处理
 void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 {
     uint8 itemSlot;

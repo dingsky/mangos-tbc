@@ -108,6 +108,7 @@ void WorldSession::HandleAutoEquipItemSlotOpcode(WorldPacket& recv_data)
     _player->SwapItem(item->GetPos(), dstpos);
 }
 
+//交换物品
 void WorldSession::HandleSwapItem(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_SWAP_ITEM");
@@ -138,6 +139,7 @@ void WorldSession::HandleSwapItem(WorldPacket& recv_data)
     _player->SwapItem(src, dst);
 }
 
+//装备物品处理
 void WorldSession::HandleAutoEquipItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_AUTOEQUIP_ITEM");
@@ -807,6 +809,7 @@ void WorldSession::SendListInventory(ObjectGuid vendorguid) const
     SendPacket(data);
 }
 
+//物品在背包中的移动
 void WorldSession::HandleAutoStoreBagItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_AUTOSTORE_BAG_ITEM");
