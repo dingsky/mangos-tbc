@@ -64,6 +64,7 @@ void WorldSession::HandleIgnoreTradeOpcode(WorldPacket& /*recvPacket*/)
     // recvPacket.print_storage();
 }
 
+//交易正忙?
 void WorldSession::HandleBusyTradeOpcode(WorldPacket& /*recvPacket*/)
 {
     DEBUG_LOG("WORLD: Busy Trade %u", _player->GetGUIDLow());
@@ -241,26 +242,32 @@ static void clearAcceptTradeMode(Item** myItems, Item** hisItems)
     }
 }
 
+//接受交易
 void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
 {
     recvPacket.read_skip<uint32>();
 
+    //获取交易数据, 不存在则忽略请求
     TradeData* my_trade = _player->m_trade;
     if (!my_trade)
         return;
 
     Player* trader = my_trade->GetTrader();
 
+    //对方交易数据
     TradeData* his_trade = trader->m_trade;
     if (!his_trade)
         return;
 
+    //我的物品列表和对方的物品列表
     Item* myItems[TRADE_SLOT_TRADED_COUNT]  = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
     Item* hisItems[TRADE_SLOT_TRADED_COUNT] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
     // set before checks to properly undo at problems (it already set in to client)
+    //接受交易请求
     my_trade->SetAccepted(true);
 
+    //对方不在交易范围内
     TradeStatusInfo info;
     if (!_player->IsWithinDistInMap(trader, TRADE_DISTANCE, false))
     {
@@ -271,6 +278,7 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
     }
 
     // not accept case incorrect money amount
+    //我交易的钱超过自己钱包里的钱了
     if (my_trade->GetMoney() > _player->GetMoney())
     {
         info.Status = TRADE_STATUS_CLOSE_WINDOW;
@@ -281,6 +289,7 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
     }
 
     // not accept case incorrect money amount
+    //对方交易的钱超过她钱包里的钱了
     if (his_trade->GetMoney() > trader->GetMoney())
     {
         info.Status = TRADE_STATUS_CLOSE_WINDOW;
@@ -291,6 +300,7 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
     }
 
     // not accept if some items now can't be trade (cheating)
+    //我方或者对方如果存在不可交易的物品, 则返回错误
     for (int i = 0; i < TRADE_SLOT_TRADED_COUNT; ++i)
     {
         if (Item* item = my_trade->GetItem(TradeSlots(i)))
@@ -507,6 +517,7 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
     }
 }
 
+//不接受交易请求
 void WorldSession::HandleUnacceptTradeOpcode(WorldPacket& /*recvPacket*/)
 {
     TradeData* my_trade = _player->m_trade;
@@ -516,8 +527,10 @@ void WorldSession::HandleUnacceptTradeOpcode(WorldPacket& /*recvPacket*/)
     my_trade->SetAccepted(false, true);
 }
 
+//开始交易
 void WorldSession::HandleBeginTradeOpcode(WorldPacket& /*recvPacket*/)
 {
+    //获取交易数据， 不存在则忽略请求
     TradeData* my_trade = _player->m_trade;
     if (!my_trade)
         return;
@@ -538,6 +551,7 @@ void WorldSession::SendCancelTrade()
     SendTradeStatus(info);
 }
 
+//取消交易
 void WorldSession::HandleCancelTradeOpcode(WorldPacket& /*recvPacket*/)
 {
     // sent also after LOGOUT COMPLETE
@@ -545,14 +559,17 @@ void WorldSession::HandleCancelTradeOpcode(WorldPacket& /*recvPacket*/)
         _player->TradeCancel(true);
 }
 
+//发起交易
 void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
 {
     ObjectGuid otherGuid;
-    recvPacket >> otherGuid;
+    recvPacket >> otherGuid;    //对方的guid
 
+    //如果玩家正在交易, 忽略本次请求
     if (GetPlayer()->m_trade)
         return;
 
+    //如果玩家死亡了， 返回失败
     TradeStatusInfo info;
     if (!GetPlayer()->isAlive())
     {
@@ -561,6 +578,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //玩家被击晕了, 返回失败
     if (GetPlayer()->hasUnitState(UNIT_STAT_STUNNED))
     {
         info.Status = TRADE_STATUS_YOU_STUNNED;
@@ -568,6 +586,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //玩家正在登出
     if (isLogingOut())
     {
         info.Status = TRADE_STATUS_YOU_LOGOUT;
@@ -575,6 +594,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //玩家正在飞行
     if (GetPlayer()->IsTaxiFlying())
     {
         info.Status = TRADE_STATUS_TARGET_TO_FAR;
@@ -582,8 +602,10 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //获取交易对象
     Player* pOther = ObjectAccessor::FindPlayer(otherGuid);
 
+    //交易对象不存在
     if (!pOther)
     {
         info.Status = TRADE_STATUS_NO_TARGET;
@@ -591,6 +613,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //交易对象就是玩家自己或交易对象正在交易， 返回失败
     if (pOther == GetPlayer() || pOther->m_trade)
     {
         info.Status = TRADE_STATUS_BUSY;
@@ -598,6 +621,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //交易对象死亡了
     if (!pOther->isAlive())
     {
         info.Status = TRADE_STATUS_TARGET_DEAD;
@@ -605,6 +629,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //交易对象飞行中
     if (pOther->IsTaxiFlying())
     {
         info.Status = TRADE_STATUS_TARGET_TO_FAR;
@@ -612,6 +637,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //交易队形被击晕了
     if (pOther->hasUnitState(UNIT_STAT_STUNNED))
     {
         info.Status = TRADE_STATUS_TARGET_STUNNED;
@@ -619,6 +645,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //交易对象正在登出
     if (pOther->GetSession()->isLogingOut())
     {
         info.Status = TRADE_STATUS_TARGET_LOGOUT;
@@ -626,6 +653,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //交易对象屏蔽了当前玩家
     if (pOther->GetSocial()->HasIgnore(GetPlayer()->GetObjectGuid()))
     {
         info.Status = TRADE_STATUS_IGNORE_YOU;
@@ -633,6 +661,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //不是一个阵营的玩家
     if (pOther->GetTeam() != _player->GetTeam())
     {
         info.Status = TRADE_STATUS_WRONG_FACTION;
@@ -640,6 +669,7 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //交易对象距离过远
     if (!pOther->IsWithinDistInMap(_player, TRADE_DISTANCE, false))
     {
         info.Status = TRADE_STATUS_TARGET_TO_FAR;
@@ -648,9 +678,11 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
     }
 
     // OK start trade
+    //当前玩家和交易对象都创建交易数据
     _player->m_trade = new TradeData(_player, pOther);
     pOther->m_trade = new TradeData(pOther, _player);
 
+    //发送交易信息给交易对象
     info.Status = TRADE_STATUS_BEGIN_TRADE;
     info.TraderGuid = _player->GetObjectGuid();
     pOther->GetSession()->SendTradeStatus(info);

@@ -2270,7 +2270,7 @@ void Player::SetGMVisible(bool on)
 }
 
 ///- If the player is invited, remove him. If the group if then only 1 person, disband the group.
-//把玩家从队伍中移除， 如果至剩下他一个人则解散团队
+//锟斤拷锟斤拷掖佣锟斤拷锟斤拷锟斤拷瞥锟斤拷锟? 锟斤拷锟斤拷锟绞ｏ拷锟斤拷锟揭伙拷锟斤拷锟斤拷锟斤拷散锟脚讹拷
 void Player::UninviteFromGroup()
 {
     Group* group = GetGroupInvite();
@@ -10632,12 +10632,15 @@ void Player::DestroyItemCount(Item* pItem, uint32& count, bool update)
 
 void Player::SplitItem(uint16 src, uint16 dst, uint32 count)
 {
+    //源背包、位置
     uint8 srcbag = src >> 8;
     uint8 srcslot = src & 255;
 
+    //目标背包、位置
     uint8 dstbag = dst >> 8;
     uint8 dstslot = dst & 255;
 
+    //源物品
     Item* pSrcItem = GetItemByPos(srcbag, srcslot);
     if (!pSrcItem)
     {
@@ -10739,20 +10742,23 @@ void Player::SplitItem(uint16 src, uint16 dst, uint32 count)
 
 void Player::SwapItem(uint16 src, uint16 dst)
 {
-    uint8 srcbag = src >> 8;
-    uint8 srcslot = src & 255;
+    uint8 srcbag = src >> 8;    //源背包
+    uint8 srcslot = src & 255;  //源位置
 
-    uint8 dstbag = dst >> 8;
-    uint8 dstslot = dst & 255;
+    uint8 dstbag = dst >> 8;    //目的背包
+    uint8 dstslot = dst & 255;  //目的位置
 
+    //获取源物品和目的物品信息
     Item* pSrcItem = GetItemByPos(srcbag, srcslot);
     Item* pDstItem = GetItemByPos(dstbag, dstslot);
 
+    //源物品不存在
     if (!pSrcItem)
         return;
 
     DEBUG_LOG("STORAGE: SwapItem bag = %u, slot = %u, item = %u", dstbag, dstslot, pSrcItem->GetEntry());
 
+    //玩家死亡了, 不允许移动背包
     if (!isAlive())
     {
         SendEquipError(EQUIP_ERR_YOU_ARE_DEAD, pSrcItem, pDstItem);
@@ -10774,6 +10780,7 @@ void Player::SwapItem(uint16 src, uint16 dst)
     }
 
     // prevent put equipped/bank bag in self
+    //不允许背包放发哦自己里面
     if (IsBagPos(src) && srcslot == dstbag)
     {
         SendEquipError(EQUIP_ERR_NONEMPTY_BAG_OVER_OTHER_BAG, pSrcItem, pDstItem);
