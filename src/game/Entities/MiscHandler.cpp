@@ -66,7 +66,7 @@ void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
     GetPlayer()->RepopAtGraveyard();
 }
 
-//Õâ¸öº¯ÊýÊÇ¸ÉÊ²Ã´ÓÃµÄÅ¶???
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½Ê²Ã´ï¿½Ãµï¿½Å¶???
 void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WHO");
@@ -264,13 +264,13 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Send SMSG_WHO Message");
 }
 
-//µÇ³öÇëÇó
+//ï¿½Ç³ï¿½ï¿½ï¿½ï¿½ï¿½
 void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_LOGOUT_REQUEST, security %u", GetSecurity());
 
     // Can not logout if...
-    //Õ½¶·×´Ì¬¡¢ÌøÔ¾¡¢×¹Âä×´Ì¬²»ÔÊÐíµÇ³ö
+    //Õ½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½Ô¾ï¿½ï¿½×¹ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½
     if (GetPlayer()->isInCombat() ||                        //...is in combat
             //...is jumping ...is falling
             GetPlayer()->m_movementInfo.HasMovementFlag(MovementFlags(MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR)))
@@ -293,14 +293,14 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
     }
 
     // not set flags if player can't free move to prevent lost state at logout cancel
-    //Èç¹ûÍæ¼Ò¿ÉÒÔ×ÔÓÉÒÆ¶¯
+    //ï¿½ï¿½ï¿½ï¿½ï¿½Ò¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
     if (GetPlayer()->CanFreeMove())
     {
         float height = GetPlayer()->GetMap()->GetHeight(GetPlayer()->GetPositionX(), GetPlayer()->GetPositionY(), GetPlayer()->GetPositionZ());
         if ((GetPlayer()->GetPositionZ() < height + 0.1f) && !(GetPlayer()->IsInWater()))
             GetPlayer()->SetStandState(UNIT_STAND_STATE_SIT);
 
-        //ÔÊÐíÍæ¼Ò×ÔÓÉÒÆ¶¯
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
         GetPlayer()->SetRoot(true);
 
         GetPlayer()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
@@ -311,16 +311,16 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
     data << uint32(0);
     data << uint8(0);
     SendPacket(data);
-    LogoutRequest(time(nullptr));   //·µ»ØµÇ³öÓ¦´ð
+    LogoutRequest(time(nullptr));   //ï¿½ï¿½ï¿½ØµÇ³ï¿½Ó¦ï¿½ï¿½
 }
 
-//Ê²Ã´¶¼Ã»¸É
+//Ê²Ã´ï¿½ï¿½Ã»ï¿½ï¿½
 void WorldSession::HandlePlayerLogoutOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_PLAYER_LOGOUT Message");
 }
 
-//È¡ÏûµÇ³öÇëÇó
+//È¡ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½ï¿½ï¿½
 void WorldSession::HandleLogoutCancelOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_LOGOUT_CANCEL Message");
@@ -331,15 +331,15 @@ void WorldSession::HandleLogoutCancelOpcode(WorldPacket& /*recv_data*/)
     SendPacket(data);
 
     // not remove flags if can't free move - its not set in Logout request code.
-    //Èç¹ûÍæ¼Ò¿ÉÒÔ×ÔÓÉÒÆ¶¯
+    //ï¿½ï¿½ï¿½ï¿½ï¿½Ò¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
     if (GetPlayer()->CanFreeMove())
     {
         //!we can move again
-        //ÔÊÐíÍæ¼ÒÒÆ¶¯
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
         GetPlayer()->SetRoot(false);
 
         //! Stand Up
-        //Íæ¼ÒÕ¾ÆðÀ´
+        //ï¿½ï¿½ï¿½Õ¾ï¿½ï¿½ï¿½ï¿½
         GetPlayer()->SetStandState(UNIT_STAND_STATE_STAND);
 
         //! DISABLE_ROTATE
@@ -387,12 +387,14 @@ void WorldSession::HandleZoneUpdateOpcode(WorldPacket& recv_data)
     GetPlayer()->UpdateZone(newzone, newarea);
 }
 
+//è®¾ç½®ç›®æ ‡
 void WorldSession::HandleSetTargetOpcode(WorldPacket& recv_data)
 {
     // When this packet send?
     ObjectGuid guid ;
-    recv_data >> guid;
+    recv_data >> guid;  //ç›®æ ‡guid
 
+    //è®¾ç½®ç›®æ ‡
     _player->SetTargetGuid(guid);
 
     // update reputation list if need
@@ -429,7 +431,7 @@ void WorldSession::HandleStandStateChangeOpcode(WorldPacket& recv_data)
     _player->SetStandState(animstate);
 }
 
-//²éÑ¯ºÃÓÑÁÐ±í
+//ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½
 void WorldSession::HandleContactListOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_CONTACT_LIST");
@@ -439,7 +441,7 @@ void WorldSession::HandleContactListOpcode(WorldPacket& recv_data)
     _player->GetSocial()->SendSocialList();
 }
 
-//Ìí¼ÓºÃÓÑ
+//ï¿½ï¿½Óºï¿½ï¿½ï¿½
 void WorldSession::HandleAddFriendOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_ADD_FRIEND");
@@ -447,21 +449,21 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recv_data)
     std::string friendName = GetMangosString(LANG_FRIEND_IGNORE_UNKNOWN);
     std::string friendNote;
 
-    recv_data >> friendName;    //ºÃÓÑÐÕÃû
+    recv_data >> friendName;    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-    recv_data >> friendNote;    //ºÃÓÑ±¸×¢
+    recv_data >> friendNote;    //ï¿½ï¿½ï¿½Ñ±ï¿½×¢
 
-    //¼ì²éºÃÓÑÐÕÃû¸ñÊ½
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½
     if (!normalizePlayerName(friendName))
         return;
 
-    //ºÃÓÑÐÕÃûÈ¥¿Õ¸ñ
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¥ï¿½Õ¸ï¿½
     CharacterDatabase.escape_string(friendName);            // prevent SQL injection - normal name don't must changed by this call
 
     DEBUG_LOG("WORLD: %s asked to add friend : '%s'",
               GetPlayer()->GetName(), friendName.c_str());
 
-    //¸ù¾ÝºÃÓÑÐÕÃû²éÑ¯½ÇÉ«±í»ñÈ¡½ÇÉ«guidºÍÖÖ×å, ÔÚ»Øµ÷º¯ÊýÖÐ·µ»Ø
+    //ï¿½ï¿½ï¿½Ýºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯ï¿½ï¿½É«ï¿½ï¿½ï¿½È¡ï¿½ï¿½É«guidï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½Ú»Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð·ï¿½ï¿½ï¿½
     CharacterDatabase.AsyncPQuery(&WorldSession::HandleAddFriendOpcodeCallBack, GetAccountId(), friendNote, "SELECT guid, race FROM characters WHERE name = '%s'", friendName.c_str());
 }
 
@@ -516,45 +518,45 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult* result, uint32 acc
     DEBUG_LOG("WORLD: Sent (SMSG_FRIEND_STATUS)");
 }
 
-//É¾³ýºÃÓÑ
+//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void WorldSession::HandleDelFriendOpcode(WorldPacket& recv_data)
 {
     ObjectGuid friendGuid;
 
     DEBUG_LOG("WORLD: Received opcode CMSG_DEL_FRIEND");
 
-    recv_data >> friendGuid;    //»¹ÓÐguid
+    recv_data >> friendGuid;    //ï¿½ï¿½ï¿½ï¿½guid
 
-    //½«»º´æÖÐºÃÓÑÉ¾³ý, ½«Êý¾Ý¿âÖÐ½ÇÉ«ºÃÓÑÒ²É¾³ý
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðºï¿½ï¿½ï¿½É¾ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½Ð½ï¿½É«ï¿½ï¿½ï¿½ï¿½Ò²É¾ï¿½ï¿½
     _player->GetSocial()->RemoveFromSocialList(friendGuid, false);
 
-    //Í¨Öª¿Í»§¶Ë, »¹ÓÐÒÑÉ¾³ý
+    //Í¨Öªï¿½Í»ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½
     sSocialMgr.SendFriendStatus(GetPlayer(), FRIEND_REMOVED, friendGuid, false);
 
     DEBUG_LOG("WORLD: Sent motd (SMSG_FRIEND_STATUS)");
 }
 
-//ÆÁ±ÎÆäËûÍæ¼ÒÇëÇó
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_ADD_IGNORE");
 
     std::string IgnoreName = GetMangosString(LANG_FRIEND_IGNORE_UNKNOWN);
 
-    recv_data >> IgnoreName;    //ÆÁ±ÎÍæ¼ÒµÄÐÕÃû
+    recv_data >> IgnoreName;    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½
 
-    //¼ì²éÐÕÃû¸ñÊ½
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½
     if (!normalizePlayerName(IgnoreName))
         return;
 
-    //ÐÕÃûÈ¥¿Õ¸ñ
+    //ï¿½ï¿½ï¿½ï¿½È¥ï¿½Õ¸ï¿½
     CharacterDatabase.escape_string(IgnoreName);            // prevent SQL injection - normal name don't must changed by this call
 
-    //´òÓ¡ÈÕÖ¾
+    //ï¿½ï¿½Ó¡ï¿½ï¿½Ö¾
     DEBUG_LOG("WORLD: %s asked to Ignore: '%s'",
               GetPlayer()->GetName(), IgnoreName.c_str());
 
-    //¸üÐÂ»º´æºÍÊý¾Ý¿â, ¶ÔÏÂ»ØÓ¦´ð
+    //ï¿½ï¿½ï¿½Â»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿ï¿½, ï¿½ï¿½ï¿½Â»ï¿½Ó¦ï¿½ï¿½
     CharacterDatabase.AsyncPQuery(&WorldSession::HandleAddIgnoreOpcodeCallBack, GetAccountId(), "SELECT guid FROM characters WHERE name = '%s'", IgnoreName.c_str());
 }
 
@@ -598,7 +600,7 @@ void WorldSession::HandleAddIgnoreOpcodeCallBack(QueryResult* result, uint32 acc
     DEBUG_LOG("WORLD: Sent (SMSG_FRIEND_STATUS)");
 }
 
-//É¾³ýºöÂÔÍæ¼Ò
+//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void WorldSession::HandleDelIgnoreOpcode(WorldPacket& recv_data)
 {
     ObjectGuid ignoreGuid;
@@ -614,15 +616,15 @@ void WorldSession::HandleDelIgnoreOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Sent motd (SMSG_FRIEND_STATUS)");
 }
 
-//ÉèÖÃºÃÓÑ±¸×¢ÇëÇó
+//ï¿½ï¿½ï¿½Ãºï¿½ï¿½Ñ±ï¿½×¢ï¿½ï¿½ï¿½ï¿½
 void WorldSession::HandleSetContactNotesOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_SET_CONTACT_NOTES");
-    ObjectGuid guid;    //½ÇÉ«guid
-    std::string note;   //±¸×¢
+    ObjectGuid guid;    //ï¿½ï¿½É«guid
+    std::string note;   //ï¿½ï¿½×¢
     recv_data >> guid >> note;
 
-    //¸üÐÂ»º´æÖÐºÃÓÑ±¸×¢ºÍÊý¾Ý¿âÖÐºÃÓÑ±¸×¢
+    //ï¿½ï¿½ï¿½Â»ï¿½ï¿½ï¿½ï¿½Ðºï¿½ï¿½Ñ±ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½Ðºï¿½ï¿½Ñ±ï¿½×¢
     _player->GetSocial()->SetFriendNote(guid, note);
 }
 
@@ -719,14 +721,14 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     DEBUG_LOG("Trigger ID: %u", Trigger_ID);
     Player* player = GetPlayer();
 
-    //Èç¹ûÍæ¼ÒÔÚ·ÉÐÐÖÐ, ºöÂÔÇøÓò´¥·¢Æ÷
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú·ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò´¥·ï¿½ï¿½ï¿½
     if (player->IsTaxiFlying())
     {
         DEBUG_LOG("Player '%s' (GUID: %u) in flight, ignore Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
         return;
     }
 
-    //²éÕÒ´¥·¢Æ÷ÐÅÏ¢
+    //ï¿½ï¿½ï¿½Ò´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
     AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(Trigger_ID);
     if (!atEntry)
     {
@@ -738,7 +740,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     const float delta = 5.0f;
 
     // check if player in the range of areatrigger
-    //²éÕÒÍæ¼ÒÊÇ·ñÔÚ´¥·¢Æ÷·¶Î§ÄÚ
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§ï¿½ï¿½
     if (!IsPointInAreaTriggerZone(atEntry, player->GetMapId(), player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), delta))
     {
         DEBUG_LOG("Player '%s' (GUID: %u) too far, ignore Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
@@ -1137,7 +1139,7 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
     SendPacket(data);
 }
 
-//Ô¶³Ì´«ËÍ´¦Àíº¯Êý
+//Ô¶ï¿½Ì´ï¿½ï¿½Í´ï¿½ï¿½ï¿½ï¿½ï¿½
 void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WORLD_TELEPORT from %s", GetPlayer()->GetGuidStr().c_str());
@@ -1162,7 +1164,7 @@ void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
 
     // DEBUG_LOG("Received opcode CMSG_WORLD_TELEPORT");
 
-    //é£žï¿½?ï¿½çŠ¶ï¿??, ä¸å…è®¸è¿œç¨‹ä¼ ï¿??
+    //é£žï¿½?ï¿½çŠ¶ï¿½??, ä¸å…è®¸è¿œç¨‹ä¼ ï¿½??
     if (GetPlayer()->IsTaxiFlying())
     {
         DEBUG_LOG("Player '%s' (GUID: %u) in flight, ignore worldport command.", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow());
@@ -1177,7 +1179,7 @@ void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
         SendNotification(LANG_YOU_NOT_HAVE_PERMISSION);
 }
 
-//·µ»ØÕËºÅ¡¢ÓÊÏä¡¢ÉÏ´ÎµÇÂ¼IP
+//ï¿½ï¿½ï¿½ï¿½ï¿½ËºÅ¡ï¿½ï¿½ï¿½ï¿½ä¡¢ï¿½Ï´Îµï¿½Â¼IP
 void WorldSession::HandleWhoisOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WHOIS");

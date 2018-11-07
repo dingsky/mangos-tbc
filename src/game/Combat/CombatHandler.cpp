@@ -23,21 +23,25 @@
 #include "Entities/ObjectGuid.h"
 #include "Entities/Player.h"
 
+//开始攻击
 void WorldSession::HandleAttackSwingOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
-    recv_data >> guid;
+    recv_data >> guid;  //被攻击对象
 
     DEBUG_FILTER_LOG(LOG_FILTER_COMBAT, "WORLD: Received opcode CMSG_ATTACKSWING %s", guid.GetString().c_str());
 
+    //如果被攻击的对象既不是生物也不是玩家, 则返回失败
     if (!guid.IsUnit())
     {
         sLog.outError("WORLD: %s isn't unit", guid.GetString().c_str());
         return;
     }
 
+    //根据guid获取被攻击对象信息
     Unit* pEnemy = _player->GetMap()->GetUnit(guid);
 
+    //玩家不能攻击目标
     if (!_player->CanAttackNow(pEnemy))
     {
         // stop attack state at client
@@ -45,9 +49,11 @@ void WorldSession::HandleAttackSwingOpcode(WorldPacket& recv_data)
         return;
     }
 
+    //攻击目标
     _player->Attack(pEnemy, true);
 }
 
+//停止攻击
 void WorldSession::HandleAttackStopOpcode(WorldPacket& /*recv_data*/)
 {
     GetPlayer()->AttackStop();

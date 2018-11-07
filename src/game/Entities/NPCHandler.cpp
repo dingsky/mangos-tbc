@@ -294,8 +294,9 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Received opcode CMSG_GOSSIP_HELLO");
 
     ObjectGuid guid;
-    recv_data >> guid;
+    recv_data >> guid;  
 
+    //判断玩家是否可以和npc交互
     Creature* pCreature = GetPlayer()->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_NONE);
     if (!pCreature)
     {
@@ -303,6 +304,7 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recv_data)
         return;
     }
 
+    //npc停止移动
     pCreature->StopMoving();
 
     if (pCreature->isSpiritGuide())

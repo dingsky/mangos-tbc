@@ -27,7 +27,7 @@
 #include "Entities/Object.h"
 #include "Groups/Group.h"
 
-//ÎïÆ·µôÂä´¦Àí
+//ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ä´¦ï¿½ï¿½
 void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 {
     uint8 itemSlot;
@@ -92,6 +92,7 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
     recv_data >> lguid;
 
     // Check possible cheat
+    //ç©å®¶æ­»äº¡
     if (!_player->isAlive())
         return;
 
@@ -201,13 +202,13 @@ void WorldSession::HandleLootMethodOpcode(WorldPacket& recv_data)
     uint32 lootThreshold;
     recv_data >> lootMethod >> lootMaster >> lootThreshold;
 
-¡¡   //»ñÈ¡Íæ¼ÒËùÔÚ×é
+ï¿½ï¿½   //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     Group* group = GetPlayer()->GetGroup();
     if (!group)
         return;
 
     /** error handling **/
-    //Ö»ÓĞ×é³¤ÔÊĞí
+    //Ö»ï¿½ï¿½ï¿½é³¤ï¿½ï¿½ï¿½ï¿½
     if (!group->IsLeader(GetPlayer()->GetObjectGuid()))
         return;
     /********************/

@@ -22,10 +22,11 @@
 #include "Log.h"
 #include "Entities/Player.h"
 
+//接受决斗
 void WorldSession::HandleDuelAcceptedOpcode(WorldPacket& recvPacket)
 {
     ObjectGuid guid;
-    recvPacket >> guid;
+    recvPacket >> guid; //瀵规柟鐨刧uid
 
     // Check for own duel info first
     Player* self = GetPlayer();
@@ -62,6 +63,7 @@ void WorldSession::HandleDuelAcceptedOpcode(WorldPacket& recvPacket)
     opponent->SendDuelCountdown(3000);
 }
 
+//取消决斗
 void WorldSession::HandleDuelCancelledOpcode(WorldPacket& recvPacket)
 {
     ObjectGuid guid;
