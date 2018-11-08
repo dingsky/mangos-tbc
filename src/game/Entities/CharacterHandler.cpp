@@ -821,6 +821,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     delete holder;
 }
 
+//设置战场中的阵营    
 void WorldSession::HandleSetFactionAtWarOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_SET_FACTION_ATWAR");

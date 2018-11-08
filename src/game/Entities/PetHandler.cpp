@@ -366,7 +366,7 @@ void WorldSession::HandlePetStopAttack(WorldPacket& recv_data)
     pet->AttackStop();
 }
 
-//宠物信息查询
+//宠物信息查�??
 void WorldSession::HandlePetNameQueryOpcode(WorldPacket& recv_data)
 {
     DETAIL_LOG("HandlePetNameQuery. CMSG_PET_NAME_QUERY");
@@ -377,7 +377,7 @@ void WorldSession::HandlePetNameQueryOpcode(WorldPacket& recv_data)
     recv_data >> petnumber;
     recv_data >> petguid;
 
-    //发送宠物信息
+    //发送宠物信�?
     SendPetNameQuery(petguid, petnumber);
 }
 
@@ -423,10 +423,11 @@ void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
     ObjectGuid petGuid;
     uint8  count;
 
-    recv_data >> petGuid;
+    recv_data >> petGuid;   //宠物guid
 
     Unit* petUnit = _player->GetMap()->GetUnit(petGuid);
 
+    //宠物不存在或不是玩�?�所�?
     if (!petUnit || (petUnit != _player->GetPet() && petUnit != _player->GetCharm()))
     {
         sLog.outError("HandlePetSetAction: Unknown pet or pet owner.");
@@ -532,6 +533,7 @@ void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
     }
 }
 
+//����������
 void WorldSession::HandlePetRename(WorldPacket& recv_data)
 {
     DETAIL_LOG("HandlePetRename. CMSG_PET_RENAME");

@@ -336,12 +336,13 @@ void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
     obj->Use(_player);
 }
 
+//释放法术
 void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
 {
     uint32 spellId;
     uint8  cast_count;
-    recvPacket >> spellId;
-    recvPacket >> cast_count;
+    recvPacket >> spellId;  //法术id
+    recvPacket >> cast_count;   //释放次数
 
     // ignore for remote control state (for player case)
     Unit* mover = _player->GetMover();
@@ -354,6 +355,7 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
     DEBUG_LOG("WORLD: got cast spell packet, spellId - %u, cast_count: %u data length = " SIZEFMTD,
               spellId, cast_count, recvPacket.size());
 
+    //获取法术信息
     SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
     if (!spellInfo)
     {
@@ -365,6 +367,7 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
     if (mover->GetTypeId() == TYPEID_PLAYER)
     {
         // not have spell in spellbook or spell passive and not casted by client
+        //没有这个法术或是个被动法术, 返回失败
         if (!((Player*)mover)->HasActiveSpell(spellId) || IsPassiveSpell(spellInfo))
         {
             sLog.outError("World: Player %u casts spell %u which he shouldn't have", mover->GetGUIDLow(), spellId);
@@ -376,6 +379,7 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
     else
     {
         // not have spell in spellbook or spell passive and not casted by client
+        //生物没有这个法术或是个被动法术， 返回失败
         if (!((Creature*)mover)->HasSpell(spellId) || IsPassiveSpell(spellInfo))
         {
             // cheater? kick? ban?
@@ -385,6 +389,7 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
     }
 
     // client provided targets
+    //法术示范目标
     SpellCastTargets targets;
 
 #ifdef BUILD_PLAYERBOT
@@ -401,11 +406,13 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
             spellInfo = actualSpellInfo;
     }
 
+    //释放法术
     Spell* spell = new Spell(mover, spellInfo, false);
     spell->m_cast_count = cast_count;                       // set count of casts
     spell->SpellStart(&targets);
 }
 
+//取消法术释放
 void WorldSession::HandleCancelCastOpcode(WorldPacket& recvPacket)
 {
     uint32 spellId;
@@ -425,21 +432,26 @@ void WorldSession::HandleCancelCastOpcode(WorldPacket& recvPacket)
         _player->InterruptNonMeleeSpells(false, spellId);
 }
 
+//取消光环
 void WorldSession::HandleCancelAuraOpcode(WorldPacket& recvPacket)
 {
     uint32 spellId;
-    recvPacket >> spellId;
+    recvPacket >> spellId;  //法术id
 
+    //获取法术信息
     SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
     if (!spellInfo)
         return;
 
+    //法术不允许取消
     if (spellInfo->HasAttribute(SPELL_ATTR_CANT_CANCEL))
         return;
 
+    //被动技能不允许取消
     if (IsPassiveSpell(spellInfo))
         return;
 
+    //根据法术id获取光环信息
     SpellAuraHolder* holder = _player->GetSpellAuraHolder(spellId);
 
     if (!holder)
@@ -484,6 +496,7 @@ void WorldSession::HandleCancelAuraOpcode(WorldPacket& recvPacket)
         return;
 
     // non channeled case
+    //取消光环
     _player->RemoveAurasDueToSpellByCancel(spellId);
 }
 
