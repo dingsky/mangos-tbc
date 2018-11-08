@@ -518,8 +518,10 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
     }
 }
 
+//表情
 void WorldSession::HandleEmoteOpcode(WorldPacket& recv_data)
 {
+    //如果玩家死亡或者假死状态, 不允许使用表情
     if (!GetPlayer()->isAlive() || GetPlayer()->IsFeigningDeath())
         return;
 
@@ -560,11 +562,14 @@ namespace MaNGOS
     };
 }                                                           // namespace MaNGOS
 
+//文本表情
 void WorldSession::HandleTextEmoteOpcode(WorldPacket& recv_data)
 {
+    //如果玩家死亡了, 不允许发文本表情
     if (!GetPlayer()->isAlive())
         return;
 
+    //如果玩家不能说话, 禁止发文本表情
     if (!GetPlayer()->CanSpeak())
     {
         std::string timeStr = secsToTimeString(m_muteTime - time(nullptr));
@@ -575,14 +580,16 @@ void WorldSession::HandleTextEmoteOpcode(WorldPacket& recv_data)
     uint32 text_emote, emoteNum;
     ObjectGuid guid;
 
-    recv_data >> text_emote;
-    recv_data >> emoteNum;
-    recv_data >> guid;
+    recv_data >> text_emote;    //文本表情
+    recv_data >> emoteNum;      //文本表情
+    recv_data >> guid;          //玩家guid
 
+    //根据表情ID, 查找表情信息
     EmotesTextEntry const* em = sEmotesTextStore.LookupEntry(text_emote);
     if (!em)
         return;
 
+    //表情ID
     uint32 emote_id = em->textid;
 
     switch (emote_id)

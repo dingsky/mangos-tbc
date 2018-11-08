@@ -420,11 +420,12 @@ void WorldSession::HandleSetSelectionOpcode(WorldPacket& recv_data)
         _player->GetReputationMgr().SetVisible(factionTemplateEntry);
 }
 
+//Õ¾Á¢×´Ì¬¸ü¸Ä
 void WorldSession::HandleStandStateChangeOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: Received opcode CMSG_STANDSTATECHANGE"); -- too many spam in log at lags/debug stop
     uint32 animstate;
-    recv_data >> animstate;
+    recv_data >> animstate; //×´Ì¬
 
     _player->SetStandState(animstate);
 }

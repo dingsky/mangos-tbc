@@ -72,7 +72,7 @@ bool LoginQueryHolder::Initialize()
 
     // NOTE: all fields in `characters` must be read to prevent lost character data at next save in case wrong DB structure.
     // !!! NOTE: including unused `zone`,`online`
-    //角色基础信息
+    //角色基�?�信息
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADFROM,            "SELECT guid, account, name, race, class, gender, level, xp, money, playerBytes, playerBytes2, playerFlags,"
                      "position_x, position_y, position_z, map, orientation, taximask, cinematic, totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost,"
                      "resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path, dungeon_difficulty,"
@@ -87,19 +87,19 @@ bool LoginQueryHolder::Initialize()
     //角色光环
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADAURAS,           "SELECT caster_guid,item_guid,spell,stackcount,remaincharges,basepoints0,basepoints1,basepoints2,periodictime0,periodictime1,periodictime2,maxduration,remaintime,effIndexMask FROM character_aura WHERE guid = '%u'", m_guid.GetCounter());
 
-    //角色技能
+    //角色技�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADSPELLS,          "SELECT spell,active,disabled FROM character_spell WHERE guid = '%u'", m_guid.GetCounter());
 
-    //探索状态
+    //探索状�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADQUESTSTATUS,     "SELECT quest,status,rewarded,explored,timer,mobcount1,mobcount2,mobcount3,mobcount4,itemcount1,itemcount2,itemcount3,itemcount4 FROM character_queststatus WHERE guid = '%u'", m_guid.GetCounter());
 
-    //每日探索状态
+    //每日探索状�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADDAILYQUESTSTATUS, "SELECT quest FROM character_queststatus_daily WHERE guid = '%u'", m_guid.GetCounter());
 
-    //每周探索状态
+    //每周探索状�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADWEEKLYQUESTSTATUS, "SELECT quest FROM character_queststatus_weekly WHERE guid = '%u'", m_guid.GetCounter());
 
-    //每月探索状态
+    //每月探索状�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADMONTHLYQUESTSTATUS, "SELECT quest FROM character_queststatus_monthly WHERE guid = '%u'", m_guid.GetCounter());
 
     //角色声望
@@ -120,28 +120,28 @@ bool LoginQueryHolder::Initialize()
     //角色炉石绑定家的位置
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADHOMEBIND,        "SELECT map,zone,position_x,position_y,position_z FROM character_homebind WHERE guid = '%u'", m_guid.GetCounter());
 
-    //角色技能冷却时间
+    //角色技能冷却时�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADSPELLCOOLDOWNS,  "SELECT SpellId, SpellExpireTime, Category, CategoryExpireTime, ItemId FROM character_spell_cooldown WHERE LowGuid = '%u'", m_guid.GetCounter());
     if (sWorld.getConfig(CONFIG_BOOL_DECLINED_NAMES_USED))
         res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADDECLINEDNAMES,   "SELECT genitive, dative, accusative, instrumental, prepositional FROM character_declinedname WHERE guid = '%u'", m_guid.GetCounter());
     
     // in other case still be dummy query
-    //公会成员
+    //�?会成�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADGUILD,           "SELECT guildid,rank FROM guild_member WHERE guid = '%u'", m_guid.GetCounter());
 
-    //竞技场成员信息
+    //竞技场成员信�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADARENAINFO,       "SELECT arenateamid, played_week, played_season, personal_rating FROM arena_team_member WHERE guid='%u'", m_guid.GetCounter());
 
     //战场信息
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADBGDATA,          "SELECT instance_id, team, join_x, join_y, join_z, join_o, join_map FROM character_battleground_data WHERE guid = '%u'", m_guid.GetCounter());
 
-    //技能, 推测这个是生活技能
+    //技�?, 推测这个�?生活技�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADSKILLS,          "SELECT skill, value, max FROM character_skills WHERE guid = '%u'", m_guid.GetCounter());
 
-    //邮件信息
+    //�?件信�?
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADMAILS,           "SELECT id,messageType,sender,receiver,subject,itemTextId,expire_time,deliver_time,money,cod,checked,stationery,mailTemplateId,has_items FROM mail WHERE receiver = '%u' ORDER BY id DESC", m_guid.GetCounter());
 
-    //邮件??
+    //�?�???
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADMAILEDITEMS,     "SELECT data, mail_id, item_guid, item_template FROM mail_items JOIN item_instance ON item_guid = guid WHERE receiver = '%u'", m_guid.GetCounter());
 
     return res;
@@ -194,7 +194,7 @@ class CharacterHandler
 #endif
 } chrHandler;
 
-//把角色列表返回给客户端
+//把�?�色列表返回给�?�户�?
 void WorldSession::HandleCharEnum(QueryResult* result)
 {
     WorldPacket data(SMSG_CHAR_ENUM, 100);                  // we guess size
@@ -222,7 +222,7 @@ void WorldSession::HandleCharEnum(QueryResult* result)
     SendPacket(data);
 }
 
-//同步角色列表
+//同�?��?�色列表
 void WorldSession::HandleCharEnumOpcode(WorldPacket& /*recv_data*/)
 {
     /// get all the data necessary for loading all characters (along with their pets) on the account
@@ -265,18 +265,18 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
     recv_data >> class_;
 
     // extract other data required for player creating
-    //一些人物参数
+    //一些人物参�?
     uint8 gender, skin, face, hairStyle, hairColor, facialHair, outfitId;
     recv_data >> gender >> skin >> face;
     recv_data >> hairStyle >> hairColor >> facialHair >> outfitId;
 
-    //初始化一个应答报文
+    //初�?�化一�?应答报文
     WorldPacket data(SMSG_CHAR_CREATE, 1);                  // returned with diff.values in all cases
 
     //判断GM级别
-    if (GetSecurity() == SEC_PLAYER)    //如果GM级别是0:普通玩家
+    if (GetSecurity() == SEC_PLAYER)    //如果GM级别�?0:�?通玩�?
     {
-        //获取角色创建限制, 0:都允许, 1:不允许创建联盟角色, 2:不允许部落角色, 3:不允许创建联盟和部落角色
+        //获取角色创建限制, 0:都允�?, 1:不允许创建联盟�?�色, 2:不允许部落�?�色, 3:不允许创建联盟和部落角色
         if (uint32 mask = sWorld.getConfig(CONFIG_UINT32_CHARACTERS_CREATING_DISABLED))
         {
             bool disabled = false;
@@ -290,7 +290,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
                 default: break;
             }
 
-            if (disabled)   //判断是否允许创建角色, 如果不允许, 则直接返回应答
+            if (disabled)   //判断�?否允许创建�?�色, 如果不允�?, 则直接返回应�?
             {
                 data << (uint8)CHAR_CREATE_DISABLED;
                 SendPacket(data);
@@ -311,7 +311,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
     }
 
     // prevent character creating Expansion race without Expansion account
-    //阻止创建不允许常见的种族
+    //阻�?�创建不允�?�常见的种族
     if (raceEntry->expansion > Expansion())
     {
         data << (uint8)CHAR_CREATE_EXPANSION;
@@ -321,7 +321,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
     }
 
     // prevent character creating with invalid name
-    //检查角色名字是否合法
+    //检查�?�色名字�?否合�?
     if (!normalizePlayerName(name))
     {
         data << (uint8)CHAR_NAME_NO_NAME;
@@ -331,7 +331,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
     }
 
     // check name limitations
-    //检查名字限制
+    //检查名字限�?
     uint8 res = ObjectMgr::CheckPlayerName(name, true);
     if (res != CHAR_NAME_SUCCESS)
     {
@@ -340,7 +340,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
         return;
     }
 
-    //普通玩家不允许创建保留名字角色
+    //�?通玩家不允�?�创建保留名字�?�色
     if (GetSecurity() == SEC_PLAYER && sObjectMgr.IsReservedName(name))
     {
         data << (uint8)CHAR_NAME_RESERVED;
@@ -356,7 +356,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
         return;
     }
 
-    //检查账户创建的角色数量是否超限
+    //检查账户创建的角色数量�?否超�?
     QueryResult* resultacct = LoginDatabase.PQuery("SELECT SUM(numchars) FROM realmcharacters WHERE acctid = '%u'", GetAccountId());
     if (resultacct)
     {
@@ -372,7 +372,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
         }
     }
 
-    //检查账户创建的所有角色是否超限
+    //检查账户创建的所有�?�色�?否超�?
     QueryResult* result = CharacterDatabase.PQuery("SELECT COUNT(guid) FROM characters WHERE account = '%u'", GetAccountId());
     uint8 charcount = 0;
     if (result)
@@ -389,14 +389,14 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
         }
     }
 
-    //判断是否允许创建双阵营角色: 非PVP服务或开启了双阵营角色或GM账户
+    //判断�?否允许创建双阵营角色: 非PVP服务或开�?了双阵营角色或GM账户
     bool AllowTwoSideAccounts = !sWorld.IsPvPRealm() || sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_ACCOUNTS) || GetSecurity() > SEC_PLAYER;
 
-    //判断是否需要展示简介, 猜测是客户端放片头动画
+    //判断�?否需要展示简�?, 猜测�?客户�?放片头动�?
     CinematicsSkipMode skipCinematics = CinematicsSkipMode(sWorld.getConfig(CONFIG_UINT32_SKIP_CINEMATICS));
 
     bool have_same_race = false;
-    //如果不允许创建双阵营角色或只有第一个角色展示简介
+    //如果不允许创建双阵营角色或只有�??一�?角色展示简�?
     if (!AllowTwoSideAccounts || skipCinematics == CINEMATICS_SKIP_SAME_RACE)
     {
         QueryResult* result2 = CharacterDatabase.PQuery("SELECT race FROM characters WHERE account = '%u' %s",
@@ -437,7 +437,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
         }
     }
 
-    //构建一个新角色
+    //构建一�?新�?�色
     Player* pNewChar = new Player(this);
     if (!pNewChar->Create(sObjectMgr.GeneratePlayerLowGuid(), name, race_, class_, gender, skin, face, hairStyle, hairColor, facialHair, outfitId))
     {
@@ -456,7 +456,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
     pNewChar->SetAtLoginFlag(AT_LOGIN_FIRST);               // First login
 
     // Player created, save it now
-    //保存到数据库
+    //保存到数�?�?
     pNewChar->SaveToDB();
     charcount += 1;
 
@@ -481,7 +481,7 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
     recv_data >> guid;  
 
     // can't delete loaded character
-    //正在登录中的角色不允许删除
+    //正在登录�?的�?�色不允许删�?
     if (sObjectMgr.GetPlayer(guid))
         return;
 
@@ -489,7 +489,7 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
     std::string name;
 
     // is guild leader
-    //不允许删除一个公会会长
+    //不允许删除一�?�?会会�?
     if (sGuildMgr.GetGuildByLeader(guid))
     {
         WorldPacket data(SMSG_CHAR_DELETE, 1);
@@ -499,7 +499,7 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
     }
 
     // is arena team captain
-    //不允许删除一个竞技场的队长
+    //不允许删除一�?竞技场的队长
     if (sObjectMgr.GetArenaTeamByCaptain(guid))
     {
         WorldPacket data(SMSG_CHAR_DELETE, 1);
@@ -510,7 +510,7 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
 
     uint32 lowguid = guid.GetCounter();
 
-    //查询账号信息
+    //查�?�账号信�?
     QueryResult* result = CharacterDatabase.PQuery("SELECT account,name FROM characters WHERE guid='%u'", lowguid);
     if (result)
     {
@@ -535,7 +535,7 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
         sLog.outCharDump(dump.c_str(), GetAccountId(), lowguid, name.c_str());
     }
 
-    //把数据库中的角色信息删除
+    //把数�?库中的�?�色信息删除
     Player::DeleteFromDB(guid, GetAccountId());
 
     //返回删除成功应答
@@ -544,25 +544,25 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
     SendPacket(data);
 }
 
-//玩家登录请求处理
+//玩�?�登录�?�求处理
 void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
 {
     ObjectGuid playerGuid;
     recv_data >> playerGuid;
 
-    //如果玩家正在登录或已登陆, 则不返回应答
+    //如果玩�?��?�在登录或已登陆, 则不返回应答
     if (PlayerLoading() || GetPlayer() != nullptr)
     {
         sLog.outError("Player tryes to login again, AccountId = %d", GetAccountId());
         return;
     }
 
-    //正在登录中标志置为true
+    //正在登录�?标志�?为true
     m_playerLoading = true;
 
     DEBUG_LOG("WORLD: Received opcode Player Logon Message");
 
-    //从数据库中同步玩家的各种信息
+    //从数�?库中同�?�玩家的各�?�信�?
     LoginQueryHolder* holder = new LoginQueryHolder(GetAccountId(), playerGuid);
     if (!holder->Initialize())
     {
@@ -598,7 +598,7 @@ void PlayerbotMgr::LoginPlayerBot(ObjectGuid playerGuid)
 }
 #endif
 
-//玩家登录回调函数
+//玩�?�登录回调函�?
 void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 {
     ObjectGuid playerGuid = holder->GetGuid();
@@ -843,12 +843,13 @@ void WorldSession::HandleMeetingStoneInfoOpcode(WorldPacket& /*recv_data*/)
     SendPacket(data);
 }
 
+//���ý̳̱�־
 void WorldSession::HandleTutorialFlagOpcode(WorldPacket& recv_data)
 {
     uint32 iFlag;
-    recv_data >> iFlag;
+    recv_data >> iFlag; //�̳̱�־
 
-    uint32 wInt = (iFlag / 32);
+    uint32 wInt = (iFlag / 32); 
     if (wInt >= 8)
     {
         // sLog.outError("CHEATER? Account:[%d] Guid[%u] tried to send wrong CMSG_TUTORIAL_FLAG", GetAccountId(),GetGUID());
@@ -863,12 +864,14 @@ void WorldSession::HandleTutorialFlagOpcode(WorldPacket& recv_data)
     // DEBUG_LOG("Received Tutorial Flag Set {%u}.", iFlag);
 }
 
+//����̳̱�־
 void WorldSession::HandleTutorialClearOpcode(WorldPacket& /*recv_data*/)
 {
     for (int i = 0; i < 8; ++i)
         SetTutorialInt(i, 0xFFFFFFFF);
 }
 
+//���ý̳̱�־
 void WorldSession::HandleTutorialResetOpcode(WorldPacket& /*recv_data*/)
 {
     for (int i = 0; i < 8; ++i)

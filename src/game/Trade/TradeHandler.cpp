@@ -688,20 +688,24 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
     pOther->GetSession()->SendTradeStatus(info);
 }
 
+//设置交易金币
 void WorldSession::HandleSetTradeGoldOpcode(WorldPacket& recvPacket)
 {
     uint32 gold;
 
-    recvPacket >> gold;
+    recvPacket >> gold; //金币数量
 
+    //获取交易数据
     TradeData* my_trade = _player->GetTradeData();
     if (!my_trade)
         return;
 
     // gold can be incorrect, but this is checked at trade finished.
+    //设置交易金额, 通知双方玩家数据更新
     my_trade->SetMoney(gold);
 }
 
+//设置交易物品
 void WorldSession::HandleSetTradeItemOpcode(WorldPacket& recvPacket)
 {
     // send update
@@ -713,10 +717,12 @@ void WorldSession::HandleSetTradeItemOpcode(WorldPacket& recvPacket)
     recvPacket >> bag;
     recvPacket >> slot;
 
+    //获取当前玩家交易数据
     TradeData* my_trade = _player->m_trade;
     if (!my_trade)
         return;
 
+    //检查交易位置是否合法
     TradeStatusInfo info;
     // invalid slot number
     if (tradeSlot >= TRADE_SLOT_COUNT)
@@ -727,6 +733,7 @@ void WorldSession::HandleSetTradeItemOpcode(WorldPacket& recvPacket)
     }
 
     // check cheating, can't fail with correct client operations
+    //获取物品位置
     Item* item = _player->GetItemByPos(bag, slot);
     if (!item || (tradeSlot != TRADE_SLOT_NONTRADED && !item->CanBeTraded()))
     {
@@ -735,6 +742,7 @@ void WorldSession::HandleSetTradeItemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //如果物品已经在交易列表里, 则拒绝
     // prevent place single item into many trade slots using cheating and client bugs
     if (my_trade->HasItem(item->GetObjectGuid()))
     {
@@ -744,21 +752,26 @@ void WorldSession::HandleSetTradeItemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //通知双方玩家交易数据
     my_trade->SetItem(TradeSlots(tradeSlot), item);
 }
 
+//去除一个交易物品
 void WorldSession::HandleClearTradeItemOpcode(WorldPacket& recvPacket)
 {
     uint8 tradeSlot;
     recvPacket >> tradeSlot;
 
+    //获取玩家交易信息
     TradeData* my_trade = _player->m_trade;
     if (!my_trade)
         return;
 
+    //检查物品位置
     // invalid slot number
     if (tradeSlot >= TRADE_SLOT_COUNT)
         return;
 
+    //把该交易位置的物品置为空, 同时通知双方玩家
     my_trade->SetItem(TradeSlots(tradeSlot), nullptr);
 }

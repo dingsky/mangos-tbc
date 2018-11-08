@@ -1842,6 +1842,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
 
 void Unit::HandleEmoteCommand(uint32 emote_id)
 {
+    //把表情广播出去
     WorldPacket data(SMSG_EMOTE, 4 + 8);
     data << uint32(emote_id);
     data << GetObjectGuid();
@@ -10176,11 +10177,15 @@ bool Unit::IsSeatedState() const
 
 void Unit::SetStandState(uint8 state)
 {
+    //璁剧疆鐘舵�?
     SetByteValue(UNIT_FIELD_BYTES_1, 0, state);
 
+
+    //闈炵珯绔嬬姸鎬?
     if (!IsSeatedState())
         RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_SEATED);
 
+    //杩斿洖搴旂瓟
     if (GetTypeId() == TYPEID_PLAYER)
     {
         WorldPacket data(SMSG_STANDSTATE_UPDATE, 1);
