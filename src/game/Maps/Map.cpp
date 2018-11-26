@@ -1899,9 +1899,11 @@ DynamicObject* Map::GetDynamicObject(ObjectGuid guid)
  */
 Unit* Map::GetUnit(ObjectGuid guid)
 {
+    //如果是玩家, 则根据guid获取玩家信息
     if (guid.IsPlayer())
         return GetPlayer(guid);
 
+    //其他情况则获取任何类型的生物、宠物
     return GetAnyTypeCreature(guid);
 }
 

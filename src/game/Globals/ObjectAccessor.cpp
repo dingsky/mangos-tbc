@@ -48,12 +48,16 @@ ObjectAccessor::~ObjectAccessor()
 Unit*
 ObjectAccessor::GetUnit(WorldObject const& u, ObjectGuid guid)
 {
+    //guid 为0
     if (!guid)
         return nullptr;
 
+    
+    //是一个玩家, 则根据guid查找玩家
     if (guid.IsPlayer())
         return FindPlayer(guid);
 
+    //
     if (!u.IsInWorld())
         return nullptr;
 

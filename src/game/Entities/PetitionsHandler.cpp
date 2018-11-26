@@ -45,6 +45,7 @@
 #define ARENA_TEAM_CHARTER_5v5_COST 2000000                 // 200 G
 #define CHARTER_DISPLAY_ID          16161
 
+//购买公会注册表/竞技场注册表
 void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("Received opcode CMSG_PETITION_BUY");
@@ -52,7 +53,7 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
 
     ObjectGuid guidNPC;
     uint32 clientIndex;                                     // 1 for guild and arenaslot+1 for arenas in client
-    std::string name;
+    std::string name;                                       //公会/竞技场队伍名称
 
     recv_data >> guidNPC;                                   // NPC GUID
     recv_data.read_skip<uint32>();                          // 0
@@ -77,6 +78,7 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
     DEBUG_LOG("Petitioner %s tried sell petition: name %s", guidNPC.GetString().c_str(), name.c_str());
 
     // prevent cheating
+    //获取NPC信息
     Creature* pCreature = GetPlayer()->GetNPCIfCanInteractWith(guidNPC, UNIT_NPC_FLAG_PETITIONER);
     if (!pCreature)
     {
@@ -87,20 +89,21 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
     uint32 charterid;
     uint32 cost;
     uint32 type;
-    if (pCreature->isTabardDesigner())
+    if (pCreature->isTabardDesigner())  //公会管理员
     {
         // if tabard designer, then trying to buy a guild charter.
         // do not let if already in guild.
-        if (_player->GetGuildId())
+        if (_player->GetGuildId())      //已在公会中
             return;
 
-        charterid = GUILD_CHARTER;
+        charterid = GUILD_CHARTER;      
         cost = GUILD_CHARTER_COST;
         type = 9;
     }
     else
     {
         // TODO: find correct opcode
+        //没有满级的玩家不允许购买竞技场注册表
         if (_player->getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
         {
             SendNotification(LANG_ARENA_ONE_TOOLOW, sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL));
@@ -129,6 +132,7 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
                 return;
         }
 
+        //判断玩家是否已有竞技场队伍
         if (_player->GetArenaTeamId(clientIndex - 1))       // arenaSlot+1 as received from client
         {
             SendArenaTeamCommandResult(ERR_ARENA_TEAM_CREATE_S, name, "", ERR_ALREADY_IN_ARENA_TEAM);
@@ -136,13 +140,16 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
         }
     }
 
-    if (type == 9)
+    if (type == 9)  //购买公会注册表
     {
+        //判断公会名是否已存在
         if (sGuildMgr.GetGuildByName(name))
         {
             SendGuildCommandResult(GUILD_CREATE_S, name, ERR_GUILD_NAME_EXISTS_S);
             return;
         }
+
+        //公会名字合法性校验
         if (sObjectMgr.IsReservedName(name) || !ObjectMgr::IsValidCharterName(name))
         {
             SendGuildCommandResult(GUILD_CREATE_S, name, ERR_GUILD_NAME_INVALID);
@@ -151,11 +158,14 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
     }
     else
     {
+        //判断竞技场名字是否已存在
         if (sObjectMgr.GetArenaTeamByName(name))
         {
             SendArenaTeamCommandResult(ERR_ARENA_TEAM_CREATE_S, name, "", ERR_ARENA_TEAM_NAME_EXISTS_S);
             return;
         }
+
+        //判断竞技场名字合法性
         if (sObjectMgr.IsReservedName(name) || !ObjectMgr::IsValidCharterName(name))
         {
             SendArenaTeamCommandResult(ERR_ARENA_TEAM_CREATE_S, name, "", ERR_ARENA_TEAM_NAME_INVALID);
@@ -163,6 +173,7 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
         }
     }
 
+    //获取注册表属性
     ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(charterid);
     if (!pProto)
     {
@@ -170,6 +181,7 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
         return;
     }
 
+    //判断玩家携带的金钱是否足以购买注册表
     if (_player->GetMoney() < cost)
     {
         // player hasn't got enough money
@@ -185,6 +197,7 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
         return;
     }
 
+    //玩家扣除金钱
     _player->ModifyMoney(-(int32)cost);
     Item* charter = _player->StoreNewItem(dest, charterid, true);
     if (!charter)
@@ -908,6 +921,7 @@ void WorldSession::HandlePetitionShowListOpcode(WorldPacket& recv_data)
     SendPetitionShowList(guid);
 }
 
+//发送公会/竞技场队伍购买列表
 void WorldSession::SendPetitionShowList(ObjectGuid guid) const
 {
     Creature* pCreature = GetPlayer()->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_PETITIONER);
@@ -918,15 +932,15 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid) const
     }
 
     uint8 count;
-    if (pCreature->isTabardDesigner())
+    if (pCreature->isTabardDesigner())  //公会注册管理员
         count = 1;
-    else
+    else                                //竞技场队伍管理员
         count = 3;
 
     WorldPacket data(SMSG_PETITION_SHOWLIST, 8 + 1 + 4 * 6);
     data << ObjectGuid(guid);                               // npc guid
     data << uint8(count);                                   // count
-    if (count == 1)
+    if (count == 1)                                         //公会注册表信息
     {
         data << uint32(1);                                  // index
         data << uint32(GUILD_CHARTER);                      // charter entry
@@ -935,7 +949,7 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid) const
         data << uint32(0);                                  // unknown
         data << uint32(9);                                  // required signs?
     }
-    else
+    else    //竞技场注册表信息
     {
         // 2v2
         data << uint32(1);                                  // index

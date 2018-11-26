@@ -366,7 +366,7 @@ void WorldSession::HandlePetStopAttack(WorldPacket& recv_data)
     pet->AttackStop();
 }
 
-//宠物信息查�??
+//宠物信息查???
 void WorldSession::HandlePetNameQueryOpcode(WorldPacket& recv_data)
 {
     DETAIL_LOG("HandlePetNameQuery. CMSG_PET_NAME_QUERY");
@@ -377,7 +377,7 @@ void WorldSession::HandlePetNameQueryOpcode(WorldPacket& recv_data)
     recv_data >> petnumber;
     recv_data >> petguid;
 
-    //发送宠物信�?
+    //发送宠物信??
     SendPetNameQuery(petguid, petnumber);
 }
 
@@ -416,28 +416,32 @@ void WorldSession::SendPetNameQuery(ObjectGuid petguid, uint32 petnumber) const
     _player->GetSession()->SendPacket(data);
 }
 
+//设置宠物动作
 void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
 {
     DETAIL_LOG("HandlePetSetAction. CMSG_PET_SET_ACTION");
 
-    ObjectGuid petGuid;
-    uint8  count;
+    ObjectGuid petGuid; //宠物guid
+    uint8  count;       
 
-    recv_data >> petGuid;   //宠物guid
+    recv_data >> petGuid;   
 
+    //获取宠物信息
     Unit* petUnit = _player->GetMap()->GetUnit(petGuid);
 
-    //宠物不存在或不是玩�?�所�?
+    //宠物不存在或不是玩家所有的宠物或召唤物, 忽略消息
     if (!petUnit || (petUnit != _player->GetPet() && petUnit != _player->GetCharm()))
     {
         sLog.outError("HandlePetSetAction: Unknown pet or pet owner.");
         return;
     }
 
+    //获取宠物信息
     Creature* petCreature = petUnit->GetTypeId() == TYPEID_UNIT ? static_cast<Creature*>(petUnit) : nullptr;
     Pet* pet = (petCreature && petCreature->IsPet()) ? static_cast<Pet*>(petUnit) : nullptr;
 
     // pet can have action bar disabled
+    //如果宠物禁用了动作条, 忽略消息
     if (pet && (pet->GetModeFlags() & PET_MODE_DISABLE_ACTIONS))
         return;
 
@@ -533,12 +537,12 @@ void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
     }
 }
 
-//����������
+//宠物重命名
 void WorldSession::HandlePetRename(WorldPacket& recv_data)
 {
     DETAIL_LOG("HandlePetRename. CMSG_PET_RENAME");
 
-    ObjectGuid petGuid;
+    ObjectGuid petGuid; //宠物guid
     uint8 isdeclined;
 
     std::string name;
@@ -548,13 +552,20 @@ void WorldSession::HandlePetRename(WorldPacket& recv_data)
     recv_data >> name;
     recv_data >> isdeclined;
 
+    //获取宠物信息
     Pet* pet = _player->GetMap()->GetPet(petGuid);
     // check it!
+    //以下情况不允许重命名宠物
+    //宠物不存在
+    //不是猎人宠物
+    //宠物不能被重命名
+    //不是宠物所有者
     if (!pet || pet->getPetType() != HUNTER_PET ||
             !pet->HasByteFlag(UNIT_FIELD_BYTES_2, 2, UNIT_CAN_BE_RENAMED) ||
             pet->GetOwnerGuid() != _player->GetObjectGuid() || !pet->GetCharmInfo())
         return;
 
+    //检查宠物名称是否合法
     PetNameInvalidReason res = ObjectMgr::CheckPetName(name);
     if (res != PET_NAME_SUCCESS)
     {
@@ -562,17 +573,21 @@ void WorldSession::HandlePetRename(WorldPacket& recv_data)
         return;
     }
 
+    //保留名字不允许使用
     if (sObjectMgr.IsReservedName(name))
     {
         SendPetNameInvalid(PET_NAME_RESERVED, name, nullptr);
         return;
     }
 
+    //设置宠物名称
     pet->SetName(name);
 
+    //如果玩家在队伍中, 则设置队伍宠物名称更新状态
     if (_player->GetGroup())
         _player->SetGroupUpdateFlag(GROUP_UPDATE_FLAG_PET_NAME);
 
+    //宠物设置为不可更名状态
     pet->RemoveByteFlag(UNIT_FIELD_BYTES_2, 2, UNIT_CAN_BE_RENAMED);
 
     if (isdeclined)
@@ -608,6 +623,7 @@ void WorldSession::HandlePetRename(WorldPacket& recv_data)
     pet->SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(time(nullptr)));
 }
 
+//取消召唤宠物
 void WorldSession::HandlePetAbandon(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -615,12 +631,14 @@ void WorldSession::HandlePetAbandon(WorldPacket& recv_data)
 
     DETAIL_LOG("HandlePetAbandon. CMSG_PET_ABANDON pet guid is %s", guid.GetString().c_str());
 
+    //玩家不在线
     if (!_player->IsInWorld())
         return;
 
     // pet/charmed
     if (Unit* petUnit = _player->GetMap()->GetUnit(guid))
     {
+        //不是玩家所有
         if (petUnit->GetOwnerGuid() != _player->GetObjectGuid() || !petUnit->GetCharmInfo())
             return;
 
@@ -630,10 +648,10 @@ void WorldSession::HandlePetAbandon(WorldPacket& recv_data)
         if (pet)
         {
             // Permanently abandon pet
-            if (pet->getPetType() == HUNTER_PET)
-                pet->Unsummon(PET_SAVE_AS_DELETED, _player);
+            if (pet->getPetType() == HUNTER_PET)   //猎人宠物 
+                pet->Unsummon(PET_SAVE_AS_DELETED, _player);    //取消召唤
             // Simply dismiss
-            else
+            else    //设置为死亡状态
                 petUnit->SetDeathState(CORPSE);
         }
         else

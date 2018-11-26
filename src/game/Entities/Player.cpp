@@ -2270,7 +2270,7 @@ void Player::SetGMVisible(bool on)
 }
 
 ///- If the player is invited, remove him. If the group if then only 1 person, disband the group.
-//ï¿½ï¿½ï¿½ï¿½Ò´Ó¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ³ï¿½ï¿½ï¿? ï¿½ï¿½ï¿½ï¿½ï¿½Ê£ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¢ï¿½Å¶ï¿½
+//ï¿½ï¿½ï¿½ï¿½Ò´Ó¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ³ï¿½ï¿½ï¿½? ï¿½ï¿½ï¿½ï¿½ï¿½Ê£ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¢ï¿½Å¶ï¿½
 void Player::UninviteFromGroup()
 {
     Group* group = GetGroupInvite();
@@ -10632,15 +10632,15 @@ void Player::DestroyItemCount(Item* pItem, uint32& count, bool update)
 
 void Player::SplitItem(uint16 src, uint16 dst, uint32 count)
 {
-    //Ô´±³°ü¡¢Î»ÖÃ
+    //Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
     uint8 srcbag = src >> 8;
     uint8 srcslot = src & 255;
 
-    //Ä¿±ê±³°ü¡¢Î»ÖÃ
+    //Ä¿ï¿½ê±³ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
     uint8 dstbag = dst >> 8;
     uint8 dstslot = dst & 255;
 
-    //Ô´ÎïÆ·
+    //Ô´ï¿½ï¿½Æ·
     Item* pSrcItem = GetItemByPos(srcbag, srcslot);
     if (!pSrcItem)
     {
@@ -10742,23 +10742,23 @@ void Player::SplitItem(uint16 src, uint16 dst, uint32 count)
 
 void Player::SwapItem(uint16 src, uint16 dst)
 {
-    uint8 srcbag = src >> 8;    //Ô´±³°ü
-    uint8 srcslot = src & 255;  //Ô´Î»ÖÃ
+    uint8 srcbag = src >> 8;    //Ô´ï¿½ï¿½ï¿½ï¿½
+    uint8 srcslot = src & 255;  //Ô´Î»ï¿½ï¿½
 
-    uint8 dstbag = dst >> 8;    //Ä¿µÄ±³°ü
-    uint8 dstslot = dst & 255;  //Ä¿µÄÎ»ÖÃ
+    uint8 dstbag = dst >> 8;    //Ä¿ï¿½Ä±ï¿½ï¿½ï¿½
+    uint8 dstslot = dst & 255;  //Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 
-    //»ñÈ¡Ô´ÎïÆ·ºÍÄ¿µÄÎïÆ·ĞÅÏ¢
+    //ï¿½ï¿½È¡Ô´ï¿½ï¿½Æ·ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½Ï¢
     Item* pSrcItem = GetItemByPos(srcbag, srcslot);
     Item* pDstItem = GetItemByPos(dstbag, dstslot);
 
-    //Ô´ÎïÆ·²»´æÔÚ
+    //Ô´ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if (!pSrcItem)
         return;
 
     DEBUG_LOG("STORAGE: SwapItem bag = %u, slot = %u, item = %u", dstbag, dstslot, pSrcItem->GetEntry());
 
-    //Íæ¼ÒËÀÍöÁË, ²»ÔÊĞíÒÆ¶¯±³°ü
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
     if (!isAlive())
     {
         SendEquipError(EQUIP_ERR_YOU_ARE_DEAD, pSrcItem, pDstItem);
@@ -10780,7 +10780,7 @@ void Player::SwapItem(uint16 src, uint16 dst)
     }
 
     // prevent put equipped/bank bag in self
-    //²»ÔÊĞí±³°ü·Å·¢Å¶×Ô¼ºÀïÃæ
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å·ï¿½Å¶ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½
     if (IsBagPos(src) && srcslot == dstbag)
     {
         SendEquipError(EQUIP_ERR_NONEMPTY_BAG_OVER_OTHER_BAG, pSrcItem, pDstItem);
@@ -17969,11 +17969,14 @@ void Player::TakeExtendedCost(uint32 extendedCostId, uint32 count)
 bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, uint8 bag, uint8 slot)
 {
     // cheating attempt
+    //æ•°é‡æœ€å°‘ä¸º1
     if (count < 1) count = 1;
 
+    //ç©å®¶å·²æ­»äº¡, ä¸å…è®¸ä¹°ä¸œè¥¿
     if (!isAlive())
         return false;
 
+    //è·å–ç‰©å“ä¿¡æ¯
     ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(item);
     if (!pProto)
     {
@@ -17981,6 +17984,7 @@ bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, 
         return false;
     }
 
+    //è·å–NPCä¿¡æ¯
     Creature* pCreature = GetNPCIfCanInteractWith(vendorGuid, UNIT_NPC_FLAG_VENDOR);
     if (!pCreature)
     {

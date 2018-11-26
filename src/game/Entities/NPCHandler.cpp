@@ -65,6 +65,7 @@ void WorldSession::SendTabardVendorActivate(ObjectGuid guid) const
     SendPacket(data);
 }
 
+//获取银行信息
 void WorldSession::HandleBankerActivateOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -73,16 +74,18 @@ void WorldSession::HandleBankerActivateOpcode(WorldPacket& recv_data)
 
     recv_data >> guid;
 
+    //检查是否银行npc
     if (!CheckBanker(guid))
         return;
 
+    //发送银行信息
     SendShowBank(guid);
 }
 
 void WorldSession::SendShowBank(ObjectGuid guid) const
 {
     WorldPacket data(SMSG_SHOW_BANK, 8);
-    data << ObjectGuid(guid);
+    data << ObjectGuid(guid);   //获取银行信息
     SendPacket(data);
 }
 
@@ -219,14 +222,16 @@ void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
     SendPacket(data);
 }
 
+//从训练师学习技能
 void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
 {
-    ObjectGuid guid;
-    uint32 spellId = 0;
+    ObjectGuid guid;    //训练师guid
+    uint32 spellId = 0; //技能ID
 
     recv_data >> guid >> spellId;
     DEBUG_LOG("WORLD: Received opcode CMSG_TRAINER_BUY_SPELL Trainer: %s, learn spell id is: %u", guid.GetString().c_str(), spellId);
 
+    //获取训练师信息
     Creature* unit = GetPlayer()->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_TRAINER);
     if (!unit)
     {
@@ -234,17 +239,20 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
         return;
     }
 
+    //不是当前玩家的训练师
     if (!unit->IsTrainerOf(_player, true))
         return;
 
     // check present spell in trainer spell list
-    TrainerSpellData const* cSpells = unit->GetTrainerSpells();
+    //训练师技能列表
+    TrainerSpellData const* cSpells = unit->GetTrainerSpells();         
     TrainerSpellData const* tSpells = unit->GetTrainerTemplateSpells();
 
     if (!cSpells && !tSpells)
         return;
 
     // Try find spell in npc_trainer
+    //查看训练师是否有这个技能
     TrainerSpell const* trainer_spell = cSpells ? cSpells->Find(spellId) : nullptr;
 
     // Not found, try find in npc_trainer_template
@@ -256,25 +264,31 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
         return;
 
     // can't be learn, cheat? Or double learn with lags...
+    //阵营和种族是否可以学习该技能
     uint32 reqLevel = 0;
     if (!_player->IsSpellFitByClassAndRace(trainer_spell->spell, &reqLevel))
         return;
 
+    //学习技能需要的等级是否满足
     reqLevel = trainer_spell->isProvidedReqLevel ? trainer_spell->reqLevel : std::max(reqLevel, trainer_spell->reqLevel);
     if (_player->GetTrainerSpellState(trainer_spell, reqLevel) != TRAINER_SPELL_GREEN)
         return;
 
     // apply reputation discount
+    //学习技能消耗金钱
     uint32 nSpellCost = uint32(floor(trainer_spell->spellCost * _player->GetReputationPriceDiscount(unit)));
 
     // check money requirement
+    //玩家的金钱是否足以学习技能
     if (_player->GetMoney() < nSpellCost)
         return;
 
+    //修改玩家的金钱
     _player->ModifyMoney(-int32(nSpellCost));
 
     SendPlaySpellVisual(guid, 0xB3);                        // visual effect on trainer
 
+    //对下回应答
     WorldPacket data(SMSG_PLAY_SPELL_IMPACT, 8 + 4);        // visual effect on player
     data << _player->GetObjectGuid();
     data << uint32(0x016A);                                 // index from SpellVisualKit.dbc
@@ -283,6 +297,7 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
     // learn explicitly
     _player->learnSpell(trainer_spell->spell, false);
 
+    //对下回学习成功应答
     data.Initialize(SMSG_TRAINER_BUY_SUCCEEDED, 12);
     data << ObjectGuid(guid);
     data << uint32(spellId);                                // should be same as in packet from client
@@ -296,7 +311,7 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recv_data)
     ObjectGuid guid;
     recv_data >> guid;  
 
-    //�ж�����Ƿ���Ժ�npc����
+    //判断玩家是否可以和npc交互, 获取NPC信息
     Creature* pCreature = GetPlayer()->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_NONE);
     if (!pCreature)
     {
@@ -304,12 +319,14 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recv_data)
         return;
     }
 
-    //npcֹͣ�ƶ�
+    //npc停止移动
     pCreature->StopMoving();
 
+    //如果NPC是灵魂医者, 则发送下次复活时间
     if (pCreature->isSpiritGuide())
         pCreature->SendAreaSpiritHealerQueryOpcode(_player);
 
+    //发送NPC聊天语言/发送菜单信息
     if (!sScriptDevAIMgr.OnGossipHello(_player, pCreature))
     {
         _player->PrepareGossipMenu(pCreature, pCreature->GetCreatureInfo()->GossipMenuId);
@@ -321,10 +338,10 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: CMSG_GOSSIP_SELECT_OPTION");
 
-    uint32 gossipListId;
-    uint32 menuId;
-    ObjectGuid guid;
-    std::string code;
+    uint32 gossipListId;    //聊天列表ID
+    uint32 menuId;          //菜单ID
+    ObjectGuid guid;        //对象guid
+    std::string code;       //操作
 
     recv_data >> guid >> menuId >> gossipListId;
 
