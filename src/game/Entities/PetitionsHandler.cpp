@@ -240,6 +240,7 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
     CharacterDatabase.CommitTransaction();
 }
 
+//展示公会注册表/竞技场注册表签名
 void WorldSession::HandlePetitionShowSignOpcode(WorldPacket& recv_data)
 {
     // ok
@@ -247,12 +248,13 @@ void WorldSession::HandlePetitionShowSignOpcode(WorldPacket& recv_data)
     // recv_data.hexlike();
 
     uint8 signs = 0;
-    ObjectGuid petitionguid;
+    ObjectGuid petitionguid;                //注册表guid
     recv_data >> petitionguid;                              // petition guid
 
     // solve (possible) some strange compile problems with explicit use GUID_LOPART(petitionguid) at some GCC versions (wrong code optimization in compiler?)
     uint32 petitionguid_low = petitionguid.GetCounter();
 
+    //查询注册表信息
     QueryResult* result = CharacterDatabase.PQuery("SELECT type FROM petition WHERE petitionguid = '%u'", petitionguid_low);
     if (!result)
     {
@@ -260,13 +262,15 @@ void WorldSession::HandlePetitionShowSignOpcode(WorldPacket& recv_data)
         return;
     }
     Field* fields = result->Fetch();
-    uint32 type = fields[0].GetUInt32();
+    uint32 type = fields[0].GetUInt32();    //注册表类型
     delete result;
 
     // if guild petition and has guild => error, return;
+    //有错误
     if (type == 9 && _player->GetGuildId())
         return;
 
+    //获取注册表签名信息
     result = CharacterDatabase.PQuery("SELECT playerguid FROM petition_sign WHERE petitionguid = '%u'", petitionguid_low);
 
     // result==nullptr also correct in case no sign yet
@@ -275,6 +279,7 @@ void WorldSession::HandlePetitionShowSignOpcode(WorldPacket& recv_data)
 
     DEBUG_LOG("CMSG_PETITION_SHOW_SIGNATURES petition: %s", petitionguid.GetString().c_str());
 
+    //返回签名相关信息
     WorldPacket data(SMSG_PETITION_SHOW_SIGNATURES, (8 + 8 + 4 + 1 + signs * 12));
     data << ObjectGuid(petitionguid);                       // petition guid
     data << _player->GetObjectGuid();                       // owner guid
@@ -437,19 +442,21 @@ void WorldSession::HandlePetitionRenameOpcode(WorldPacket& recv_data)
     SendPacket(data);
 }
 
+//注册表签名
 void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("Received opcode CMSG_PETITION_SIGN");    // ok
     // recv_data.hexlike();
 
     Field* fields;
-    ObjectGuid petitionGuid;
+    ObjectGuid petitionGuid;    //注册表guid
     uint8 unk;
     recv_data >> petitionGuid;                              // petition guid
     recv_data >> unk;
 
     uint32 petitionLowGuid = petitionGuid.GetCounter();
 
+    //获取注册表相关信息
     QueryResult* result = CharacterDatabase.PQuery(
                               "SELECT ownerguid, "
                               "  (SELECT COUNT(playerguid) FROM petition_sign WHERE petition_sign.petitionguid = '%u') AS signs, "
@@ -465,15 +472,17 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
     fields = result->Fetch();
     uint32 ownerLowGuid = fields[0].GetUInt32();
     ObjectGuid ownerGuid = ObjectGuid(HIGHGUID_PLAYER, ownerLowGuid);
-    uint8 signs = fields[1].GetUInt8();
-    uint32 type = fields[2].GetUInt32();
+    uint8 signs = fields[1].GetUInt8();     //当前签名数量
+    uint32 type = fields[2].GetUInt32();    //类型
 
     delete result;
 
+    //自己不允许签名
     if (ownerGuid == _player->GetObjectGuid())
         return;
 
     // not let enemies sign guild charter
+    //对立阵营不允许签名
     if (!sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_GUILD) &&
             GetPlayer()->GetTeam() != sObjectMgr.GetPlayerTeamByGUID(ownerGuid))
     {
@@ -484,14 +493,16 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (type != 9)
+    if (type != 9)  //竞技场注册表
     {
+        //不满级玩家不允许签名竞技场注册表
         if (_player->getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
         {
             SendArenaTeamCommandResult(ERR_ARENA_TEAM_CREATE_S, "", _player->GetName(), ERR_ARENA_TEAM_TARGET_TOO_LOW_S);
             return;
         }
 
+        //判断竞技场注册表类型是否合法
         if (!IsArenaTypeValid(ArenaType(type)))
             return;
 
@@ -499,25 +510,29 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
         if (slot >= MAX_ARENA_SLOT)
             return;
 
+        //玩家已有该类型的竞技场队伍, 不允许签名
         if (_player->GetArenaTeamId(slot))
         {
             SendArenaTeamCommandResult(ERR_ARENA_TEAM_INVITE_SS, "", _player->GetName(), ERR_ALREADY_IN_ARENA_TEAM_S);
             return;
         }
 
+        //玩家已有该类型竞技场队伍的邀请, 不允许签名
         if (_player->GetArenaTeamIdInvited())
         {
             SendArenaTeamCommandResult(ERR_ARENA_TEAM_INVITE_SS, "", _player->GetName(), ERR_ALREADY_INVITED_TO_ARENA_TEAM_S);
             return;
         }
     }
-    else
+    else    //公会注册表
     {
+        //获取公会信息, 已在公会里不允许签名
         if (_player->GetGuildId())
         {
             SendGuildCommandResult(GUILD_INVITE_S, _player->GetName(), ERR_ALREADY_IN_GUILD_S);
             return;
         }
+        //已有公会邀请不允许签名
         if (_player->GetGuildIdInvited())
         {
             SendGuildCommandResult(GUILD_INVITE_S, _player->GetName(), ERR_ALREADY_INVITED_TO_GUILD_S);
@@ -525,11 +540,13 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
         }
     }
 
+    //签名数量大于限制, 返回
     if (++signs > type)                                     // client signs maximum
         return;
 
     // client doesn't allow to sign petition two times by one character, but not check sign by another character from same account
     // not allow sign another player from already sign player account
+    //签名已存在, 不允许再签名
     result = CharacterDatabase.PQuery("SELECT playerguid FROM petition_sign WHERE player_account = '%u' AND petitionguid = '%u'", GetAccountId(), petitionLowGuid);
 
     if (result)
@@ -549,11 +566,13 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
         return;
     }
 
+    //创建一条签名信息
     CharacterDatabase.PExecute("INSERT INTO petition_sign (ownerguid,petitionguid, playerguid, player_account) VALUES ('%u', '%u', '%u','%u')",
                                ownerLowGuid, petitionLowGuid, _player->GetGUIDLow(), GetAccountId());
 
     DEBUG_LOG("PETITION SIGN: %s by %s", petitionGuid.GetString().c_str(), _player->GetGuidStr().c_str());
 
+    //返回应答报文
     WorldPacket data(SMSG_PETITION_SIGN_RESULTS, (8 + 8 + 4));
     data << ObjectGuid(petitionGuid);
     data << ObjectGuid(_player->GetObjectGuid());
@@ -572,6 +591,7 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
         owner->GetSession()->SendPacket(data);
 }
 
+//拒绝在注册表上签名
 void WorldSession::HandlePetitionDeclineOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("Received opcode MSG_PETITION_DECLINE");  // ok
@@ -584,6 +604,7 @@ void WorldSession::HandlePetitionDeclineOpcode(WorldPacket& recv_data)
 
     uint32 petitionLowGuid = petitionGuid.GetCounter();
 
+    //获取注册表信息
     QueryResult* result = CharacterDatabase.PQuery("SELECT ownerguid FROM petition WHERE petitionguid = '%u'", petitionLowGuid);
     if (!result)
         return;
@@ -592,6 +613,7 @@ void WorldSession::HandlePetitionDeclineOpcode(WorldPacket& recv_data)
     ObjectGuid ownerguid = ObjectGuid(HIGHGUID_PLAYER, fields[0].GetUInt32());
     delete result;
 
+    //给注册表所有者发个拒绝的信息
     Player* owner = sObjectMgr.GetPlayer(ownerguid);
     if (owner)                                              // petition owner online
     {
@@ -601,6 +623,7 @@ void WorldSession::HandlePetitionDeclineOpcode(WorldPacket& recv_data)
     }
 }
 
+//提交注册表
 void WorldSession::HandleOfferPetitionOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("Received opcode CMSG_OFFER_PETITION");   // ok

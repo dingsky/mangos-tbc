@@ -140,6 +140,7 @@ void WorldSession::HandleNameQueryOpcode(WorldPacket& recv_data)
         SendNameQueryOpcodeFromDB(guid);
 }
 
+//获取服务器当前时间
 void WorldSession::HandleQueryTimeOpcode(WorldPacket& /*recv_data*/)
 {
     SendQueryTimeResponse();
