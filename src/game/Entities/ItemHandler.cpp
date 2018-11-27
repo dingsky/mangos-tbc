@@ -1127,6 +1127,7 @@ void WorldSession::HandleItemNameQueryOpcode(WorldPacket& recv_data)
     }
 }
 
+//
 void WorldSession::HandleWrapItemOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("Received opcode CMSG_WRAP_ITEM");

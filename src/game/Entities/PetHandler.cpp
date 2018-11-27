@@ -755,17 +755,19 @@ void WorldSession::HandlePetSpellAutocastOpcode(WorldPacket& recvPacket)
     charmInfo->SetSpellAutocast(spellid, !!state);
 }
 
+//释放宠物技能
 void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
 {
     DETAIL_LOG("WORLD: CMSG_PET_CAST_SPELL");
 
-    ObjectGuid guid;
-    uint32 spellid;
+    ObjectGuid guid;    //宠物guid
+    uint32 spellid;     //技能id
 
     recvPacket >> guid >> spellid;
 
     DEBUG_LOG("WORLD: CMSG_PET_CAST_SPELL, %s, spellid %u", guid.GetString().c_str(), spellid);
 
+    //获取宠物, 并判断是否为当前玩家所有
     Unit* petUnit = _player->GetMap()->GetUnit(guid);
     if (!petUnit || (guid != _player->GetPetGuid() && !_player->HasCharm(guid)))
     {
@@ -774,9 +776,11 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
     }
 
     //TODO: all those typecasting are probably not needed anymore
+    //获取宠物信息
     Creature* petCreature = petUnit->GetTypeId() == TYPEID_UNIT ? static_cast<Creature*>(petUnit) : nullptr;
     Pet* pet = (petCreature && petCreature->IsPet()) ? static_cast<Pet*>(petUnit) : nullptr;
 
+    //获取技能信息
     SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellid);
     if (!spellInfo)
     {
@@ -784,11 +788,13 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //判断技能是否准备完毕
     if (!petUnit->IsSpellReady(*spellInfo))
         return;
 
 
     // do not cast not learned spells
+    //判断宠物是否学习过该技能, 并且该技能必须是一个主动技能
     if (!petUnit->HasSpell(spellid) || IsPassiveSpell(spellInfo))
         return;
 
@@ -801,6 +807,7 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
     Spell* spell = new Spell(petUnit, spellInfo, TRIGGERED_PET_CAST);
     spell->m_targets = targets;
 
+    //释放技能
     SpellCastResult result = spell->CheckPetCast(nullptr);
     if (result == SPELL_CAST_OK)
     {

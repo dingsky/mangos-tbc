@@ -23,25 +23,25 @@
 #include "Entities/ObjectGuid.h"
 #include "Entities/Player.h"
 
-//¿ªÊ¼¹¥»÷
+//å¼€å§‹æ”»å‡»
 void WorldSession::HandleAttackSwingOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
-    recv_data >> guid;  //±»¹¥»÷¶ÔÏó
+    recv_data >> guid;  //è¢«æ”»å‡»å¯¹è±¡
 
     DEBUG_FILTER_LOG(LOG_FILTER_COMBAT, "WORLD: Received opcode CMSG_ATTACKSWING %s", guid.GetString().c_str());
 
-    //Èç¹û±»¹¥»÷µÄ¶ÔÏó¼È²»ÊÇÉúÎïÒ²²»ÊÇÍæ¼Ò, Ôò·µ»ØÊ§°Ü
+    //å¦‚æžœè¢«æ”»å‡»çš„å¯¹è±¡æ—¢ä¸æ˜¯ç”Ÿç‰©ä¹Ÿä¸æ˜¯çŽ©å®¶, åˆ™è¿”å›žå¤±è´¥
     if (!guid.IsUnit())
     {
         sLog.outError("WORLD: %s isn't unit", guid.GetString().c_str());
         return;
     }
 
-    //¸ù¾Ýguid»ñÈ¡±»¹¥»÷¶ÔÏóÐÅÏ¢
+    //æ ¹æ®guidèŽ·å–è¢«æ”»å‡»å¯¹è±¡ä¿¡æ¯
     Unit* pEnemy = _player->GetMap()->GetUnit(guid);
 
-    //Íæ¼Ò²»ÄÜ¹¥»÷Ä¿±ê
+    //çŽ©å®¶ä¸èƒ½æ”»å‡»ç›®æ ‡
     if (!_player->CanAttackNow(pEnemy))
     {
         // stop attack state at client
@@ -49,11 +49,11 @@ void WorldSession::HandleAttackSwingOpcode(WorldPacket& recv_data)
         return;
     }
 
-    //¹¥»÷Ä¿±ê
+    //æ”»å‡»ç›®æ ‡
     _player->Attack(pEnemy, true);
 }
 
-//Í£Ö¹¹¥»÷
+//åœæ­¢æ”»å‡»
 void WorldSession::HandleAttackStopOpcode(WorldPacket& /*recv_data*/)
 {
     GetPlayer()->AttackStop();

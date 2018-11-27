@@ -790,6 +790,7 @@ void WorldSession::HandleGuildChangeInfoTextOpcode(WorldPacket& recvPacket)
     guild->SetGINFO(GINFO);
 }
 
+//保存公会标志
 void WorldSession::HandleSaveGuildEmblemOpcode(WorldPacket& recvPacket)
 {
     DEBUG_LOG("WORLD: Received opcode MSG_SAVE_GUILD_EMBLEM");
@@ -800,6 +801,7 @@ void WorldSession::HandleSaveGuildEmblemOpcode(WorldPacket& recvPacket)
     recvPacket >> vendorGuid;
     recvPacket >> EmblemStyle >> EmblemColor >> BorderStyle >> BorderColor >> BackgroundColor;
 
+    //获取NPC信息
     Creature* pCreature = GetPlayer()->GetNPCIfCanInteractWith(vendorGuid, UNIT_NPC_FLAG_TABARDDESIGNER);
     if (!pCreature)
     {
@@ -809,6 +811,7 @@ void WorldSession::HandleSaveGuildEmblemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //获取玩家公会信息
     Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId());
     if (!guild)
     {
@@ -817,6 +820,7 @@ void WorldSession::HandleSaveGuildEmblemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //只有会长可以创建公会标志
     if (guild->GetLeaderGuid() != GetPlayer()->GetObjectGuid())
     {
         //"Only guild leaders can create emblems."
@@ -824,6 +828,7 @@ void WorldSession::HandleSaveGuildEmblemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //玩家金钱需要10金币
     if (GetPlayer()->GetMoney() < 10 * GOLD)
     {
         //"You can't afford to do that."
@@ -831,10 +836,13 @@ void WorldSession::HandleSaveGuildEmblemOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    //玩家金额减10
+    //设置公会标志
     GetPlayer()->ModifyMoney(-10 * GOLD);
     guild->SetEmblem(EmblemStyle, EmblemColor, BorderStyle, BorderColor, BackgroundColor);
 
     //"Guild Emblem saved."
+    //返回发送成功
     SendSaveGuildEmblem(ERR_GUILDEMBLEM_SUCCESS);
 
     guild->Query(this);
